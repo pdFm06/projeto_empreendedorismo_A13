@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sobre Nós — Projeto Empreendedorismo</title>
+
+    <!-- Fonte moderna -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Bootstrap 5 -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" type="text/css" href="style.css" />
+  </head>
+  <body>
+    <div class="container py-4">
+      <!-- HERO -->
+      <div class="main row align-items-center">
+        <div class="col-lg-6">
+          <h1 class="title">Empreendedorismo e Inovação</h1>
+          <p class="lead">
+            Somos estudantes do ISCTE SINTRA e juntaram-nos para um projeto na
+            cadeira de Empreendedorismo e Inovação
+          </p>
+
+          <div class="d-flex gap-2">
+            <a class="btn btn-primary custom" href="#">Saber mais</a>
+            <a class="btn btn-outline custom" href="#">Contacte-nos</a>
+          </div>
+
+          <!-- Cards HERO -->
+          <div class="row g-3 mt-4">
+            <div class="col-6 col-sm-6">
+              <div class="card-surface">
+                <small class="muted">Objetivo</small>
+                <div class="section-title">Desenvolver Uma Aplicação</div>
+                <p class="muted" style="margin: 0">
+                  Decidimos desenvolver uma plataforma web para auxiliar
+                  empresas de construção na gestão de projetos.
+                </p>
+              </div>
+            </div>
+
+            <div class="col-6 col-sm-6">
+              <div class="card-surface">
+                <small class="muted">Quem desenvolve?</small>
+                <div class="section-title">Um grupo de estudantes</div>
+                <p class="muted" style="margin: 0">
+                  Somos um grupo com grande variedade de conhecimentos e áreas
+                  muito diferentes.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- HERO IMAGE -->
+        <div class="col-lg-6 mt-4 mt-lg-0">
+          <div class="card-surface">
+            <img
+              src="/img/about_us/IscteSemImg.png"
+              alt="Imagem exemplo"
+              class="img-fluid rounded"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Missão / Visão / Valores -->
+      <div class="row gy-4 mt-4">
+        <div class="col-md-4">
+          <div class="card-surface h-100">
+            <h5 class="section-title">Missão</h5>
+            <p class="muted">
+              Desenvolver uma plataforma user-friendly para as empresas de
+              construção.
+            </p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card-surface h-100">
+            <h5 class="section-title">Visão</h5>
+            <p class="muted">
+              Ajudar empresas de construção a otimizar a gestão e custo de
+              projetos.
+            </p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card-surface h-100">
+            <h5 class="section-title">Valores</h5>
+            <p class="muted">
+              Minimizar Custos e Acidentes, Maximizar Resultados.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Participantes -->
+      <div class="row mt-5">
+        <div class="col-12 text-center mb-3">
+          <h3 class="section-title">Participantes</h3>
+          <p class="muted">A equipa que torna este projeto possível</p>
+        </div>
+
+        <div class="col-12">
+          <div class="row justify-content-center g-4">
+            <div class="col-6 col-sm-4 col-md-3 col-lg-2 participant-card">
+              <img
+                src="/img/about_us/Eu.png"
+                alt="Participante 1"
+                class="participante"
+              />
+              <div class="participant-name">Tiago</div>
+              <div class="muted" style="font-size: 0.85rem">Coordenador</div>
+            </div>
+
+            <div class="col-6 col-sm-4 col-md-3 col-lg-2 participant-card">
+              <img
+                src="https://via.placeholder.com/300"
+                alt="Participante 2"
+                class="participante"
+              />
+              <div class="participant-name">Ana</div>
+              <div class="muted" style="font-size: 0.85rem">Gestão</div>
+            </div>
+
+            <div class="col-6 col-sm-4 col-md-3 col-lg-2 participant-card">
+              <img
+                src="https://via.placeholder.com/300"
+                alt="Participante 3"
+                class="participante"
+              />
+              <div class="participant-name">Rui</div>
+              <div class="muted" style="font-size: 0.85rem">Designer</div>
+            </div>
+
+            <div class="col-6 col-sm-4 col-md-3 col-lg-2 participant-card">
+              <img
+                src="https://via.placeholder.com/300"
+                alt="Participante 4"
+                class="participante"
+              />
+              <div class="participant-name">Marta</div>
+              <div class="muted" style="font-size: 0.85rem">Desenvolvedora</div>
+            </div>
+
+            <div class="col-6 col-sm-4 col-md-3 col-lg-2 participant-card">
+              <img
+                src="https://via.placeholder.com/300"
+                alt="Participante 5"
+                class="participante"
+              />
+              <div class="participant-name">João</div>
+              <div class="muted" style="font-size: 0.85rem">Marketing</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        © <span id="year"></span> Projeto Empreendedorismo — ISCTE ·
+        Desenvolvido pelo Grupo A13
+      </footer>
+    </div>
+
+    <script>
+      document.getElementById("year").textContent = new Date().getFullYear();
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

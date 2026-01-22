@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+      crossorigin="anonymous"
+    />
+    <link rel="stylesheet" type="text/css" href="/style.css" />
+  </head>
+  <body>
+    <div class="container py-4">
+      <!-- Navbar -->
+      <nav class="navbar navbar-expand-lg align-items-center">
+        <a class="navbar-brand d-flex align-items-center gap-3" href="/">
+          <img src="/img/about_us/logo-iscte.png" alt="Logo ISCTE" />
+          <div class="d-none d-md-block">
+            <div style="font-weight: 800">Projeto Empreendedorismo</div>
+            <small class="muted">Universidade ISCTE</small>
+          </div>
+        </a>
+
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navMenu"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse justify-content-end" id="navMenu">
+          <ul class="navbar-nav align-items-center gap-3">
+            <li class="nav-item">
+              <a class="nav-link" href="/">Início</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/sobre_nos">Sobre Nós</a>
+            </li>
+            <li class="nav-item">
+              <a class="btn btn-outline custom" href="/login">Entrar</a>
+            </li>
+          </ul>
+        </div>
+      </nav>
+
+      <?php $this->content() ?>
+    </div>
+  </body>
+</html>

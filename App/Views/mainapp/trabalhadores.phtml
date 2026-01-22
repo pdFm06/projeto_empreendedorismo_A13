@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trabalhadores — Projeto Empreendedorismo</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" type="text/css" href="public/style.css" />
+    <style>
+      /* Pequenas classes locais (únicas ao ficheiro) */
+      .person-card {
+        cursor: default;
+      }
+      .avatar {
+        width: 72px;
+        height: 72px;
+        border-radius: 8px;
+        object-fit: cover;
+        background: #eef2ff;
+        display: inline-block;
+      }
+      .badge-role {
+        font-weight: 700;
+        color: #0f1724;
+        background: transparent;
+      }
+      .list-empty {
+        color: #6b7280;
+        font-size: 0.95rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container py-4">
+      <div class="page-header d-flex justify-content-between align-items-start">
+        <div>
+          <h1>Trabalhadores</h1>
+          <p class="subtitle muted">
+            Perfis com informação pessoal, doenças e acidentes
+          </p>
+        </div>
+        <div class="text-end">
+          <button
+            class="btn btn-primary custom"
+            data-bs-toggle="modal"
+            data-bs-target="#createPersonModal"
+          >
+            + Novo Trabalhador
+          </button>
+        </div>
+      </div>
+
+      <div class="row g-4 mb-5" id="PessoasGrid"></div>
+
+      <footer class="mt-4 muted">
+        © <span id="year"></span> Projeto Empreendedorismo — ISCTE ·
+        Desenvolvido pelo Grupo A13
+      </footer>
+    </div>
+
+    <!-- Modal: Criar / Editar Pessoa -->
+    <div
+      class="modal fade"
+      id="createPersonModal"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="createPersonTitle">Novo Trabalhador</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Fechar"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="personForm">
+              <input type="hidden" id="personId" />
+              <div class="mb-3">
+                <label class="form-label">Nome</label>
+                <input id="personName" class="form-control" required />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input id="personEmail" type="email" class="form-control" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Telefone</label>
+                <input id="personPhone" class="form-control" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Data de Nascimento</label>
+                <input id="personDOB" type="date" class="form-control" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Função</label>
+                <input id="personRole" class="form-control" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Notas pessoais</label>
+                <textarea
+                  id="personNotes"
+                  class="form-control"
+                  rows="3"
+                ></textarea>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">
+              Cancelar
+            </button>
+            <button
+              class="btn btn-danger"
+              id="deletePersonBtn"
+              style="display: none"
+            >
+              Eliminar
+            </button>
+            <button class="btn btn-primary" id="savePersonBtn">Guardar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Perfil da Pessoa (ver + adicionar doenças/acidentes) -->
+    <div class="modal fade" id="profileModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="profileName">Perfil</h5>
+            <div class="ms-3">
+              <small id="profileRole" class="muted"></small>
+            </div>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Fechar"
+            ></button>
+          </div>
+
+          <div class="modal-body">
+            <div class="row g-4">
+              <div class="col-md-4 text-center">
+                <div id="profileAvatar" class="avatar mb-3"></div>
+                <div><strong id="profileEmail"></strong></div>
+                <div class="muted" id="profilePhone"></div>
+                <div class="muted mt-2" id="profileDOB"></div>
+                <div class="mt-3">
+                  <button
+                    class="btn btn-sm btn-outline-secondary"
+                    id="openEditFromProfile"
+                  >
+                    Editar Perfil
+                  </button>
+                </div>
+              </div>
+
+              <div class="col-md-8">
+                <h6>Notas pessoais</h6>
+                <p id="profileNotes" class="muted"></p>
+
+                <hr />
+
+                <div
+                  class="d-flex justify-content-between align-items-center mb-2"
+                >
+                  <h6>Doenças / Condições</h6>
+                  <button
+                    class="btn btn-sm btn-outline-primary"
+                    id="addIllnessBtn"
+                  >
+                    + Adicionar
+                  </button>
+                </div>
+                <div id="illnessList"></div>
+
+                <hr />
+
+                <div
+                  class="d-flex justify-content-between align-items-center mb-2"
+                >
+                  <h6>Acidentes / Incidentes</h6>
+                  <button
+                    class="btn btn-sm btn-outline-primary"
+                    id="addAccidentBtn"
+                  >
+                    + Adicionar
+                  </button>
+                </div>
+                <div id="accidentList"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">
+              Fechar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Adicionar Doença -->
+    <div
+      class="modal fade"
+      id="addIllnessModal"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Adicionar Doença / Condição</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Fechar"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="illnessForm">
+              <div class="mb-3">
+                <label class="form-label">Data</label>
+                <input
+                  id="illnessDate"
+                  type="date"
+                  class="form-control"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Descrição</label>
+                <textarea
+                  id="illnessDesc"
+                  class="form-control"
+                  rows="3"
+                  required
+                ></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Notas</label>
+                <input id="illnessNotes" class="form-control" />
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">
+              Cancelar
+            </button>
+            <button class="btn btn-primary" id="saveIllnessBtn">Guardar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Adicionar Acidente -->
+    <div
+      class="modal fade"
+      id="addAccidentModal"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Adicionar Acidente / Incidente</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Fechar"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="accidentForm">
+              <div class="mb-3">
+                <label class="form-label">Data</label>
+                <input
+                  id="accidentDate"
+                  type="date"
+                  class="form-control"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Descrição</label>
+                <textarea
+                  id="accidentDesc"
+                  class="form-control"
+                  rows="3"
+                  required
+                ></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Gravidade</label>
+                <select id="accidentSeverity" class="form-control">
+                  <option value="Leve">Leve</option>
+                  <option value="Moderado">Moderado</option>
+                  <option value="Grave">Grave</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Notas</label>
+                <input id="accidentNotes" class="form-control" />
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">
+              Cancelar
+            </button>
+            <button class="btn btn-primary" id="saveAccidentBtn">
+              Guardar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Dados locais (substituir por fetch / API)
+      let people = [
+        {
+          id: 1,
+          name: "João Silva",
+          email: "joao.silva@iscte.pt",
+          phone: "912345678",
+          dob: "1990-04-12",
+          role: "Operário",
+          notes: "",
+          illnesses: [],
+          accidents: [],
+        },
+        {
+          id: 2,
+          name: "Ana Costa",
+          email: "ana.costa@iscte.pt",
+          phone: "919876543",
+          dob: "1987-09-30",
+          role: "Encarregado",
+          notes: "",
+          illnesses: [],
+          accidents: [],
+        },
+      ];
+
+      let currentProfileId = null; // id da pessoa cujo perfil está aberto
+      document.getElementById("year").textContent = new Date().getFullYear();
+
+      // Helpers
+      function escapeHtml(s) {
+        if (!s) return "";
+        return String(s).replace(
+          /[&<>"'`=\/]/g,
+          (c) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+              "/": "&#x2F;",
+              "`": "&#x60;",
+              "=": "&#x3D;",
+            })[c],
+        );
+      }
+
+      // Render grid de pessoas
+      function renderPeople() {
+        const grid = document.getElementById("PessoasGrid");
+        grid.innerHTML = "";
+        people.forEach((p) => {
+          const col = document.createElement("div");
+          col.className = "col-md-6 col-lg-4";
+          col.innerHTML = `
+          <div class="project-card person-card p-3">
+            <div class="d-flex align-items-center gap-3">
+              <div class="avatar">${escapeHtml(
+                p.name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join(""),
+              )}</div>
+              <div class="flex-grow-1">
+                <div style="font-weight:800">${escapeHtml(p.name)}</div>
+                <div class="muted">${escapeHtml(p.role || "")}</div>
+                <div class="muted" style="font-size:.95rem">${escapeHtml(p.email || "")}</div>
+              </div>
+            </div>
+            <div class="d-flex gap-2 mt-3">
+              <button class="btn btn-sm btn-outline-primary" data-action="view" data-id="${p.id}">Ver Perfil</button>
+              <button class="btn btn-sm btn-outline-secondary" data-action="edit" data-id="${p.id}">Editar</button>
+              <button class="btn btn-sm btn-outline-danger ms-auto" data-action="delete" data-id="${p.id}">Eliminar</button>
+            </div>
+          </div>
+        `;
+          grid.appendChild(col);
+        });
+
+        // Delegação eventos
+        grid.querySelectorAll("button[data-action]").forEach((btn) => {
+          const id = parseInt(btn.getAttribute("data-id"));
+          const action = btn.getAttribute("data-action");
+          btn.addEventListener("click", () => {
+            if (action === "view") openProfile(id);
+            if (action === "edit") openEditPerson(id);
+            if (action === "delete") {
+              if (confirm("Eliminar trabalhador?")) {
+                people = people.filter((pp) => pp.id !== id);
+                renderPeople();
+              }
+            }
+          });
+        });
+      }
+
+      // Abrir modal criar/editar pessoa
+      function openEditPerson(id = null) {
+        const modalEl = document.getElementById("createPersonModal");
+        const modal = new bootstrap.Modal(modalEl);
+        document.getElementById("deletePersonBtn").style.display = "none";
+
+        if (id !== null) {
+          const p = people.find((x) => x.id === id);
+          if (!p) return;
+          document.getElementById("createPersonTitle").textContent =
+            "Editar Trabalhador";
+          document.getElementById("personId").value = p.id;
+          document.getElementById("personName").value = p.name;
+          document.getElementById("personEmail").value = p.email || "";
+          document.getElementById("personPhone").value = p.phone || "";
+          document.getElementById("personDOB").value = p.dob || "";
+          document.getElementById("personRole").value = p.role || "";
+          document.getElementById("personNotes").value = p.notes || "";
+          document.getElementById("deletePersonBtn").style.display =
+            "inline-block";
+        } else {
+          document.getElementById("createPersonTitle").textContent =
+            "Novo Trabalhador";
+          document.getElementById("personForm").reset();
+          document.getElementById("personId").value = "";
+        }
+        modal.show();
+      }
+
+      // Guardar pessoa (criar ou editar)
+      document.getElementById("savePersonBtn").addEventListener("click", () => {
+        const idVal = document.getElementById("personId").value;
+        const name = document.getElementById("personName").value.trim();
+        if (!name) {
+          alert("Nome obrigatório");
+          return;
+        }
+
+        const data = {
+          name,
+          email: document.getElementById("personEmail").value.trim(),
+          phone: document.getElementById("personPhone").value.trim(),
+          dob: document.getElementById("personDOB").value,
+          role: document.getElementById("personRole").value.trim(),
+          notes: document.getElementById("personNotes").value.trim(),
+        };
+
+        if (idVal) {
+          const id = parseInt(idVal);
+          const idx = people.findIndex((p) => p.id === id);
+          if (idx >= 0) {
+            people[idx] = { ...people[idx], ...data };
+          }
+        } else {
+          const newPerson = {
+            id: Date.now(),
+            illnesses: [],
+            accidents: [],
+            ...data,
+          };
+          people.push(newPerson);
+        }
+
+        bootstrap.Modal.getInstance(
+          document.getElementById("createPersonModal"),
+        ).hide();
+        renderPeople();
+      });
+
+      // Eliminar pessoa (botão no modal)
+      document
+        .getElementById("deletePersonBtn")
+        .addEventListener("click", () => {
+          const idVal = document.getElementById("personId").value;
+          if (!idVal) return;
+          if (!confirm("Eliminar trabalhador permanentemente?")) return;
+          const id = parseInt(idVal);
+          people = people.filter((p) => p.id !== id);
+          bootstrap.Modal.getInstance(
+            document.getElementById("createPersonModal"),
+          ).hide();
+          renderPeople();
+        });
+
+      // Abrir perfil
+      function openProfile(id) {
+        const p = people.find((x) => x.id === id);
+        if (!p) return;
+        currentProfileId = id;
+        document.getElementById("profileName").textContent = p.name;
+        document.getElementById("profileRole").textContent = p.role || "";
+        document.getElementById("profileEmail").textContent = p.email || "";
+        document.getElementById("profilePhone").textContent = p.phone || "";
+        document.getElementById("profileDOB").textContent = p.dob
+          ? "Nascimento: " + p.dob
+          : "";
+        document.getElementById("profileNotes").textContent = p.notes || "";
+        document.getElementById("profileAvatar").textContent = p.name
+          .split(" ")
+          .map((n) => n[0])
+          .join("");
+        renderIllnessList(p);
+        renderAccidentList(p);
+        bootstrap.Modal.getInstance
+          ? new bootstrap.Modal(document.getElementById("profileModal")).show()
+          : null;
+      }
+
+      // Render doenças
+      function renderIllnessList(person) {
+        const container = document.getElementById("illnessList");
+        container.innerHTML = "";
+        if (!person.illnesses || !person.illnesses.length) {
+          container.innerHTML =
+            '<div class="list-empty">Nenhuma condição registada</div>';
+          return;
+        }
+        person.illnesses.forEach((it, i) => {
+          const el = document.createElement("div");
+          el.className = "border rounded p-2 mb-2";
+          el.innerHTML = `<div style="font-weight:700">${escapeHtml(it.description)}</div>
+          <div class="muted" style="font-size:.9rem">${escapeHtml(it.date)} ${it.notes ? "· " + escapeHtml(it.notes) : ""}</div>
+          <div class="text-end mt-1">
+            <button class="btn btn-sm btn-outline-danger" data-kind="illness" data-index="${i}">Eliminar</button>
+          </div>`;
+          container.appendChild(el);
+        });
+
+        // delegação eliminar doença
+        container
+          .querySelectorAll('button[data-kind="illness"]')
+          .forEach((btn) => {
+            btn.addEventListener("click", () => {
+              const idx = parseInt(btn.getAttribute("data-index"));
+              if (!confirm("Eliminar esta condição?")) return;
+              const personIdx = people.findIndex(
+                (p) => p.id === currentProfileId,
+              );
+              if (personIdx === -1) return;
+              people[personIdx].illnesses.splice(idx, 1);
+              renderIllnessList(people[personIdx]);
+            });
+          });
+      }
+
+      // Render acidentes
+      function renderAccidentList(person) {
+        const container = document.getElementById("accidentList");
+        container.innerHTML = "";
+        if (!person.accidents || !person.accidents.length) {
+          container.innerHTML =
+            '<div class="list-empty">Nenhum incidente registado</div>';
+          return;
+        }
+        person.accidents.forEach((it, i) => {
+          const el = document.createElement("div");
+          el.className = "border rounded p-2 mb-2";
+          el.innerHTML = `<div style="font-weight:700">${escapeHtml(it.description)}</div>
+          <div class="muted" style="font-size:.9rem">${escapeHtml(it.date)} · Gravidade: ${escapeHtml(it.severity)} ${it.notes ? "· " + escapeHtml(it.notes) : ""}</div>
+          <div class="text-end mt-1">
+            <button class="btn btn-sm btn-outline-danger" data-kind="accident" data-index="${i}">Eliminar</button>
+          </div>`;
+          container.appendChild(el);
+        });
+
+        container
+          .querySelectorAll('button[data-kind="accident"]')
+          .forEach((btn) => {
+            btn.addEventListener("click", () => {
+              const idx = parseInt(btn.getAttribute("data-index"));
+              if (!confirm("Eliminar este incidente?")) return;
+              const personIdx = people.findIndex(
+                (p) => p.id === currentProfileId,
+              );
+              if (personIdx === -1) return;
+              people[personIdx].accidents.splice(idx, 1);
+              renderAccidentList(people[personIdx]);
+            });
+          });
+      }
+
+      // Abrir adicionar doença / acidente
+      document.getElementById("addIllnessBtn").addEventListener("click", () => {
+        document.getElementById("illnessForm").reset();
+        new bootstrap.Modal(document.getElementById("addIllnessModal")).show();
+      });
+      document
+        .getElementById("addAccidentBtn")
+        .addEventListener("click", () => {
+          document.getElementById("accidentForm").reset();
+          new bootstrap.Modal(
+            document.getElementById("addAccidentModal"),
+          ).show();
+        });
+
+      // Guardar doença
+      document
+        .getElementById("saveIllnessBtn")
+        .addEventListener("click", () => {
+          const date = document.getElementById("illnessDate").value;
+          const desc = document.getElementById("illnessDesc").value.trim();
+          const notes = document.getElementById("illnessNotes").value.trim();
+          if (!date || !desc) {
+            alert("Data e descrição obrigatórias");
+            return;
+          }
+          const idx = people.findIndex((p) => p.id === currentProfileId);
+          if (idx === -1) return;
+          people[idx].illnesses.push({ date, description: desc, notes });
+          bootstrap.Modal.getInstance(
+            document.getElementById("addIllnessModal"),
+          ).hide();
+          renderIllnessList(people[idx]);
+        });
+
+      // Guardar acidente
+      document
+        .getElementById("saveAccidentBtn")
+        .addEventListener("click", () => {
+          const date = document.getElementById("accidentDate").value;
+          const desc = document.getElementById("accidentDesc").value.trim();
+          const severity = document.getElementById("accidentSeverity").value;
+          const notes = document.getElementById("accidentNotes").value.trim();
+          if (!date || !desc) {
+            alert("Data e descrição obrigatórias");
+            return;
+          }
+          const idx = people.findIndex((p) => p.id === currentProfileId);
+          if (idx === -1) return;
+          people[idx].accidents.push({
+            date,
+            description: desc,
+            severity,
+            notes,
+          });
+          bootstrap.Modal.getInstance(
+            document.getElementById("addAccidentModal"),
+          ).hide();
+          renderAccidentList(people[idx]);
+        });
+
+      // Abrir edição directo do perfil
+      document
+        .getElementById("openEditFromProfile")
+        .addEventListener("click", () => {
+          if (currentProfileId === null) return;
+          bootstrap.Modal.getInstance(
+            document.getElementById("profileModal"),
+          ).hide();
+          openEditPerson(currentProfileId);
+        });
+
+      // Inicializar UI
+      renderPeople();
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sobre Nós — Projeto Empreendedorismo</title>
+
+    <!-- Fonte moderna -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Bootstrap 5 -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" type="text/css" href="style.css" />
+  </head>
+  <body>
+    <div class="container py-4">
+      <!-- HERO -->
+      <section class="hero">
+        <div class="row align-items-center">
+          <div class="col-lg-6">
+            <h1 class="hero-title">
+              Tornar a Gestão de Projetos de Construção mais fácil
+            </h1>
+            <p class="hero-desc">
+              A OnBuild centraliza e organiza toda a informação relevante para a
+              gestão de obras, permitindo acompanhar tarefas, equipas,
+              colaboradores, materiais e incidências de forma clara e eficiente.
+            </p>
+
+            <!-- Cards -->
+            <div class="row g-3 mt-2">
+              <div class="col-6">
+                <div class="card-surface">
+                  <small class="muted">Foco principal</small>
+                  <div class="section-title">Gestão Simplificada</div>
+                  <p class="muted">
+                    Todas as operações essenciais como projetos, recursos,
+                    equipas, acidentes, e relatórios reunidas num único sistema.
+                  </p>
+                </div>
+              </div>
+
+              <div class="col-6">
+                <div class="card-surface">
+                  <small class="muted">Diferenciação</small>
+                  <div class="section-title">Informação Crítica</div>
+                  <p class="muted">
+                    Consideração de acidentes e limitações dos colaboradores
+                    para atribuição mais segura e adequada de tarefas.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-6 text-center">
+            <img
+              src="/img/about_us/IscteSemImg.png"
+              class="img-fluid rounded"
+            />
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================== -->
+      <!-- HERO 2 — Experiência do utilizador -->
+      <!-- ====================================================== -->
+      <section class="hero">
+        <div class="row align-items-center">
+          <div class="col-lg-6 text-center order-lg-1 order-2">
+            <img
+              src="/img/about_us/IscteSemImg.png"
+              class="img-fluid rounded"
+            />
+          </div>
+
+          <div class="col-lg-6 order-lg-2 order-1">
+            <h1 class="hero-title">
+              Uma Experiência Intuitiva e Centrada no Utilizador
+            </h1>
+            <p class="hero-desc">
+              Desde a landing page até à dashboard dinâmica, o utilizador
+              encontra uma interface clara, organizada e desenhada para
+              facilitar a gestão diária de obras.
+            </p>
+
+            <div class="row g-3">
+              <div class="col-6">
+                <div class="card-surface">
+                  <small class="muted">Primeiro contacto</small>
+                  <div class="section-title">Landing Page</div>
+                  <p class="muted">
+                    Apresenta missão, funcionalidades e visão geral da
+                    plataforma antes do registo.
+                  </p>
+                </div>
+              </div>
+
+              <div class="col-6">
+                <div class="card-surface">
+                  <small class="muted">Acompanhamento</small>
+                  <div class="section-title">Dashboard Dinâmica</div>
+                  <p class="muted">
+                    Painéis com projetos, equipas e trabalhadores em tempo real.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- HERO 3 — Tecnologias e arquitetura -->
+      <section class="hero">
+        <div class="row align-items-center">
+          <div class="col-lg-6">
+            <h1 class="hero-title">
+              Tecnologias Modernas e Arquitetura Estruturada
+            </h1>
+            <p class="hero-desc">
+              A OnBuild é construída com HTML5, CSS3, Bootstrap, JavaScript, PHP
+              e MySQL, garantindo eficiência, flexibilidade e compatibilidade
+              com múltiplos dispositivos.
+            </p>
+
+            <div class="row g-3">
+              <div class="col-6">
+                <div class="card-surface">
+                  <small class="muted">Arquitetura</small>
+                  <div class="section-title">Padrão MVC</div>
+                  <p class="muted">
+                    Separação clara entre interface, lógica e dados, garantindo
+                    manutenção fácil e escalabilidade do sistema.
+                  </p>
+                </div>
+              </div>
+
+              <div class="col-6">
+                <div class="card-surface">
+                  <small class="muted">Base tecnológica</small>
+                  <div class="section-title">Frontend + Backend</div>
+                  <p class="muted">
+                    Landing page, autenticação, dashboard e gestão interna com
+                    comunicação entre cliente, servidor e base de dados.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-6 text-center">
+            <img
+              src="/img/about_us/IscteSemImg.png"
+              class="img-fluid rounded"
+            />
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        © <span id="year"></span> Projeto Empreendedorismo — ISCTE ·
+        Desenvolvido pelo Grupo A13
+      </footer>
+    </div>
+
+    <script>
+      document.getElementById("year").textContent = new Date().getFullYear();
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

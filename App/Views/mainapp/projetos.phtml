@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Projetos</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" type="text/css" href="style.css" />
+  </head>
+  <body>
+    <div class="container py-4">
+      <!-- PAGE HEADER -->
+      <div class="page-header">
+        <h1>Projetos</h1>
+        <p class="subtitle">Acompanhe todos os projetos em desenvolvimento</p>
+      </div>
+
+      <!-- Novo projeto -->
+      <div class="mb-4">
+        <button
+          class="btn btn-primary custom"
+          data-bs-toggle="modal"
+          data-bs-target="#createProjectModal"
+        >
+          + Novo Projeto
+        </button>
+      </div>
+
+      <!-- Sitio Projetos-->
+      <div class="row g-4 mb-5" id="projectsGrid"></div>
+
+      <!-- Modal Criar Projeto -->
+      <div
+        class="modal fade"
+        id="createProjectModal"
+        tabindex="-1"
+        aria-labelledby="createProjectModalLabel"
+        aria-hidden="true"
+      >
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="createProjectModalLabel">
+                Criar Novo Projeto
+              </h5>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+
+            <div class="modal-body">
+              <form id="projectForm">
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label for="projectName" class="form-label"
+                        >Nome do Projeto</label
+                      >
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="projectName"
+                        required
+                      />
+                    </div>
+                    <div class="mb-3">
+                      <label for="projectManager" class="form-label"
+                        >Responsável</label
+                      >
+                      <select id="projectManager" class="form-control" required>
+                        <option value="">Selecione responsável</option>
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label for="projectDeadline" class="form-label"
+                        >Prazo</label
+                      >
+                      <input
+                        type="date"
+                        class="form-control"
+                        id="projectDeadline"
+                        required
+                      />
+                    </div>
+                    <div class="mb-3">
+                      <label for="projectTeam" class="form-label"
+                        >Equipa (nome)</label
+                      >
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="projectTeam"
+                        required
+                      />
+                      <div class="form-text">
+                        Equipa pode ser nome livre; membros são definidos aqui.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <!-- Workers preview + button -->
+                    <div class="mb-3">
+                      <label class="form-label"
+                        >Trabalhadores selecionados</label
+                      >
+                      <div id="createSelectedWorkers" class="mb-2">
+                        <small class="muted"
+                          >Nenhum trabalhador selecionado</small
+                        >
+                      </div>
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-secondary"
+                        onclick="openSelectWorkersModal('create')"
+                      >
+                        + Adicionar Trabalhadores
+                      </button>
+                    </div>
+
+                    <!-- Materials available selection -->
+                    <div class="mb-3">
+                      <label for="projectMaterials" class="form-label"
+                        >Materiais disponíveis</label
+                      >
+                      <div id="materialsList" class="mb-2"></div>
+                      <div class="input-group">
+                        <input
+                          id="newMaterialInput"
+                          class="form-control"
+                          placeholder="Adicionar material personalizado"
+                        />
+                        <button
+                          type="button"
+                          class="btn btn-outline-primary"
+                          id="addMaterialBtn"
+                        >
+                          Adicionar
+                        </button>
+                      </div>
+                      <div class="form-text">
+                        Selecione materiais que faltam / necessários.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary"
+                id="createProjectButton"
+              >
+                Criar Projeto
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Seleccionar Trabalhadores (usado por criação e edição) -->
+      <div
+        class="modal fade"
+        id="selectWorkersModal"
+        tabindex="-1"
+        aria-labelledby="selectWorkersModalLabel"
+        aria-hidden="true"
+      >
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="selectWorkersModalLabel">
+                Seleccionar Trabalhadores
+              </h5>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+            <div class="modal-body">
+              <p class="muted">
+                Marque os trabalhadores e indique (opcional) a função deles no
+                projecto.
+              </p>
+              <div id="workersModalList" class="list-group"></div>
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary"
+                id="confirmSelectWorkersBtn"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Editar Projeto -->
+      <div
+        class="modal fade"
+        id="editProjectModal"
+        tabindex="-1"
+        aria-labelledby="editProjectModalLabel"
+        aria-hidden="true"
+      >
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="editProjectModalLabel">
+                Editar Projeto
+              </h5>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+            <div class="modal-body">
+              <form id="editProjectForm">
+                <input type="hidden" id="editProjectId" />
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label for="editProjectName" class="form-label"
+                        >Nome</label
+                      >
+                      <input
+                        type="text"
+                        id="editProjectName"
+                        class="form-control"
+                        required
+                      />
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="editProjectManager" class="form-label"
+                        >Responsável</label
+                      >
+                      <select
+                        id="editProjectManager"
+                        class="form-control"
+                        required
+                      >
+                        <option value="">Selecione responsável</option>
+                      </select>
+                    </div>
+
+                    <div class="mb-3">
+                      <label class="form-label">Trabalhadores</label>
+                      <div id="editSelectedWorkers" class="mb-2">
+                        <small class="muted">Nenhum trabalhador</small>
+                      </div>
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-secondary"
+                        id="manageWorkersEditBtn"
+                      >
+                        Gerir Trabalhadores
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label for="editProjectMaterials" class="form-label"
+                        >Materiais / Falta</label
+                      >
+                      <textarea
+                        id="editProjectMaterials"
+                        class="form-control"
+                        rows="6"
+                        placeholder="Uma linha por material / item em falta"
+                      ></textarea>
+                      <div class="form-text">
+                        Escreva cada material numa nova linha ou seleccione no
+                        modal.
+                      </div>
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="editProjectNotes" class="form-label"
+                        >Notas</label
+                      >
+                      <textarea
+                        id="editProjectNotes"
+                        class="form-control"
+                        rows="6"
+                        placeholder="Notas do projecto"
+                      ></textarea>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                class="btn btn-danger"
+                id="deleteProjectButton"
+              >
+                Eliminar
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary"
+                id="saveEditProjectButton"
+              >
+                Guardar Alterações
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        © <span id="year"></span> Projeto Empreendedorismo — ISCTE ·
+        Desenvolvido pelo Grupo A13
+      </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+      document.getElementById("year").textContent = new Date().getFullYear();
+
+      // Simulação DB
+      const people = [
+        { id: 1, name: "João Silva", email: "joao.silva@iscte.pt" },
+        { id: 2, name: "Ana Costa", email: "ana.costa@iscte.pt" },
+        { id: 3, name: "Pedro Santos", email: "pedro.santos@iscte.pt" },
+        { id: 4, name: "Maria Oliveira", email: "maria.oliveira@iscte.pt" },
+        { id: 5, name: "Carlos Ferreira", email: "carlos.ferreira@iscte.pt" },
+      ];
+
+      // Materiais disponíveis (simulado)
+      let materialsAvailable = ["Cimento", "Areia", "Aço", "Tijolos"];
+
+      // Projects storage
+      let projects = [];
+
+      // Temp storage for create modal selected workers and materials
+      let createModalSelectedWorkers = []; // [{id,name,email,role}]
+      let createModalSelectedMaterials = []; // array of strings
+
+      // Edit modal index and temp workers
+      let editModalIndex = null;
+      let editModalSelectedWorkers = [];
+
+      // populate manager selects
+      function populateManagerSelects() {
+        const managerSelects = [
+          document.getElementById("projectManager"),
+          document.getElementById("editProjectManager"),
+        ];
+        managerSelects.forEach((select) => {
+          select.innerHTML = '<option value="">Selecione responsável</option>';
+          people.forEach((p) => {
+            const opt = document.createElement("option");
+            opt.value = p.id;
+            opt.textContent = p.name;
+            select.appendChild(opt);
+          });
+        });
+      }
+
+      // render materials checkbox list in create modal
+      function renderMaterialsList() {
+        const container = document.getElementById("materialsList");
+        container.innerHTML = "";
+        materialsAvailable.forEach((m, i) => {
+          const id = `mat_${i}`;
+          const el = document.createElement("div");
+          el.className = "form-check";
+          el.innerHTML = `<input class="form-check-input" type="checkbox" value="${m}" id="${id}">
+                        <label class="form-check-label" for="${id}">${m}</label>`;
+          container.appendChild(el);
+        });
+      }
+
+      // add custom material
+      document
+        .getElementById("addMaterialBtn")
+        .addEventListener("click", () => {
+          const input = document.getElementById("newMaterialInput");
+          const val = input.value.trim();
+          if (!val) return;
+          materialsAvailable.unshift(val);
+          input.value = "";
+          renderMaterialsList();
+        });
+
+      // open select workers modal (mode = 'create' | 'edit')
+      let selectWorkersMode = "create";
+      function openSelectWorkersModal(mode) {
+        selectWorkersMode = mode;
+        const list = document.getElementById("workersModalList");
+        list.innerHTML = "";
+
+        // decide which set is currently selected to prefill role & checked
+        const selected =
+          mode === "create"
+            ? createModalSelectedWorkers
+            : editModalSelectedWorkers;
+
+        people.forEach((p) => {
+          const sel = selected.find((s) => s.id === p.id);
+          const checked = sel ? "checked" : "";
+          const role = sel ? sel.role : "";
+
+          const item = document.createElement("div");
+          item.className = "list-group-item d-flex gap-3 align-items-center";
+          item.innerHTML = `
+          <div class="form-check">
+            <input class="form-check-input worker-checkbox" type="checkbox" data-id="${p.id}" ${checked}>
+          </div>
+          <div class="flex-grow-1">
+            <div><strong>${p.name}</strong> <small class="muted">(${p.email})</small></div>
+            <input class="form-control form-control-sm worker-role mt-2" placeholder="Função (opcional)" data-id="${p.id}" value="${escapeHtml(role)}">
+          </div>
+        `;
+          list.appendChild(item);
+        });
+
+        const modal = new bootstrap.Modal(
+          document.getElementById("selectWorkersModal"),
+        );
+        modal.show();
+      }
+
+      // confirm selection from selectWorkersModal
+      document
+        .getElementById("confirmSelectWorkersBtn")
+        .addEventListener("click", () => {
+          const checkboxes = document.querySelectorAll(
+            "#workersModalList .worker-checkbox",
+          );
+          const rolesInputs = document.querySelectorAll(
+            "#workersModalList .worker-role",
+          );
+
+          const selected = [];
+          checkboxes.forEach((cb) => {
+            if (cb.checked) {
+              const id = parseInt(cb.getAttribute("data-id"));
+              const person = people.find((p) => p.id === id);
+              const roleInput = Array.from(rolesInputs).find(
+                (r) => parseInt(r.getAttribute("data-id")) === id,
+              );
+              const role = roleInput ? roleInput.value.trim() : "";
+              selected.push({
+                id: person.id,
+                name: person.name,
+                email: person.email,
+                role,
+              });
+            }
+          });
+
+          if (selectWorkersMode === "create") {
+            createModalSelectedWorkers = selected;
+            renderCreateSelectedWorkers();
+          } else {
+            // edit mode: set editModalSelectedWorkers and update edit modal UI
+            editModalSelectedWorkers = selected;
+            renderEditSelectedWorkers();
+          }
+
+          bootstrap.Modal.getInstance(
+            document.getElementById("selectWorkersModal"),
+          ).hide();
+        });
+
+      function renderCreateSelectedWorkers() {
+        const container = document.getElementById("createSelectedWorkers");
+        container.innerHTML = "";
+        if (!createModalSelectedWorkers.length) {
+          container.innerHTML =
+            '<small class="muted">Nenhum trabalhador selecionado</small>';
+          return;
+        }
+        createModalSelectedWorkers.forEach((w) => {
+          const el = document.createElement("div");
+          el.className = "badge bg-light border mb-1 me-1";
+          el.innerHTML = `${escapeHtml(w.name)} <small class="muted">(${escapeHtml(w.role || "—")})</small>`;
+          container.appendChild(el);
+        });
+      }
+
+      function renderEditSelectedWorkers() {
+        const container = document.getElementById("editSelectedWorkers");
+        container.innerHTML = "";
+        if (!editModalSelectedWorkers.length) {
+          container.innerHTML =
+            '<small class="muted">Nenhum trabalhador</small>';
+          return;
+        }
+        editModalSelectedWorkers.forEach((w) => {
+          const el = document.createElement("div");
+          el.className = "badge bg-light border mb-1 me-1";
+          el.innerHTML = `${escapeHtml(w.name)} <small class="muted">(${escapeHtml(w.role || "—")})</small>`;
+          container.appendChild(el);
+        });
+      }
+
+      // render project cards
+      function renderProjects() {
+        const grid = document.getElementById("projectsGrid");
+        grid.innerHTML = "";
+
+        projects.forEach((proj, idx) => {
+          const membersText =
+            proj.members && proj.members.length
+              ? proj.members
+                  .map((m) => `${m.name} (${m.role || "—"})`)
+                  .join("<br>")
+              : '<small class="muted">Nenhum</small>';
+
+          const materialsPreview =
+            proj.materials && proj.materials.length
+              ? `<small class="muted">${proj.materials.slice(0, 3).join(", ")}${proj.materials.length > 3 ? "…" : ""}</small>`
+              : '<small class="muted">Sem materiais registados</small>';
+
+          const notesPreview = proj.notes
+            ? `<p class="muted" style="margin:6px 0 0">${escapeHtml(proj.notes.substring(0, 120))}${proj.notes.length > 120 ? "…" : ""}</p>`
+            : "";
+
+          const card = document.createElement("div");
+          card.className = "col-md-6 col-lg-4";
+          card.innerHTML = `
+          <div class="project-card">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div class="project-status status-em-progresso">Em Progresso</div>
+                <h3 class="project-title" style="margin-top:8px">${escapeHtml(proj.name)}</h3>
+              </div>
+              <div class="text-end">
+                <button class="btn btn-sm btn-outline-secondary me-2" data-action="edit" data-index="${idx}">Editar</button>
+                <button class="btn btn-sm btn-outline-danger" data-action="delete" data-index="${idx}">Eliminar</button>
+              </div>
+            </div>
+
+            <div class="project-info" style="margin-top:12px">
+              <div class="info-row"><span class="info-label">Responsável:</span><span class="info-value">${escapeHtml(proj.managerName || "")}</span></div>
+              <div class="info-row"><span class="info-label">Prazo:</span><span class="info-value">${escapeHtml(proj.deadline || "")}</span></div>
+              <div class="info-row"><span class="info-label">Equipa:</span><span class="info-value">${escapeHtml(proj.teamName || "")}</span></div>
+            </div>
+
+            <div style="margin-top:12px;border-top:1px solid rgba(0,0,0,0.06);padding-top:12px">
+              <small style="font-weight:600;color:#6b7280">Trabalhadores:</small>
+              <div style="margin-top:8px">${membersText}</div>
+            </div>
+
+            <div style="margin-top:10px">
+              <small style="font-weight:600;color:#6b7280">Materiais:</small>
+              <div style="margin-top:6px">${materialsPreview}</div>
+            </div>
+
+            ${notesPreview}
+
+            <div class="project-footer" style="margin-top:12px">
+              <a href="#" class="view-btn">Ver Detalhes</a>
+            </div>
+          </div>
+        `;
+          grid.appendChild(card);
+        });
+
+        // events
+        grid.querySelectorAll("button[data-action]").forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            const action = btn.getAttribute("data-action");
+            const index = parseInt(btn.getAttribute("data-index"));
+            if (action === "edit") openEditModal(index);
+            if (action === "delete") {
+              if (confirm("Eliminar projeto?")) {
+                projects.splice(index, 1);
+                renderProjects();
+              }
+            }
+          });
+        });
+      }
+
+      // Create project
+      document
+        .getElementById("createProjectButton")
+        .addEventListener("click", function () {
+          const name = document.getElementById("projectName").value.trim();
+          const managerId = parseInt(
+            document.getElementById("projectManager").value,
+          );
+          const deadline = document.getElementById("projectDeadline").value;
+          const teamName = document.getElementById("projectTeam").value.trim();
+
+          if (!name || !managerId) {
+            alert("Preencha o nome e seleccione um responsável.");
+            return;
+          }
+
+          // collect selected materials from checkboxes
+          const checkedMatEls = Array.from(
+            document.querySelectorAll(
+              "#materialsList .form-check-input:checked",
+            ),
+          );
+          const selectedMaterials = checkedMatEls
+            .map((i) => i.value)
+            .concat(
+              // include any materials manually added to the createModalSelectedMaterials (kept in createModalSelectedMaterials)
+              createModalSelectedMaterials || [],
+            );
+
+          const manager = people.find((p) => p.id === managerId);
+
+          const newProj = {
+            id: Date.now(),
+            name,
+            managerId,
+            managerName: manager ? manager.name : "",
+            deadline,
+            teamName,
+            members: createModalSelectedWorkers.map((w) => ({
+              id: w.id,
+              name: w.name,
+              email: w.email,
+              role: w.role,
+            })),
+            materials: selectedMaterials,
+            notes: "",
+          };
+
+          projects.push(newProj);
+          renderProjects();
+
+          // reset create modal state
+          createModalSelectedWorkers = [];
+          createModalSelectedMaterials = [];
+          document.getElementById("projectForm").reset();
+          renderMaterialsList();
+          renderCreateSelectedWorkers();
+          bootstrap.Modal.getInstance(
+            document.getElementById("createProjectModal"),
+          ).hide();
+        });
+
+      // open edit modal
+      function openEditModal(index) {
+        const proj = projects[index];
+        if (!proj) return;
+
+        editModalIndex = index;
+        document.getElementById("editProjectId").value = index;
+        document.getElementById("editProjectName").value = proj.name || "";
+        document.getElementById("editProjectManager").value =
+          proj.managerId || "";
+        document.getElementById("editProjectMaterials").value = (
+          proj.materials || []
+        ).join("\n");
+        document.getElementById("editProjectNotes").value = proj.notes || "";
+
+        // set editModalSelectedWorkers from project
+        editModalSelectedWorkers = (proj.members || []).map((m) => ({
+          id: m.id,
+          name: m.name,
+          email: m.email,
+          role: m.role || "",
+        }));
+        renderEditSelectedWorkers();
+
+        const modal = new bootstrap.Modal(
+          document.getElementById("editProjectModal"),
+        );
+        modal.show();
+      }
+
+      // manage workers button in edit modal
+      document
+        .getElementById("manageWorkersEditBtn")
+        .addEventListener("click", () => {
+          openSelectWorkersModal("edit");
+        });
+
+      // save edit
+      document
+        .getElementById("saveEditProjectButton")
+        .addEventListener("click", function () {
+          const idx = parseInt(document.getElementById("editProjectId").value);
+          if (isNaN(idx)) return;
+          const proj = projects[idx];
+          if (!proj) return;
+
+          const name = document.getElementById("editProjectName").value.trim();
+          const managerId = parseInt(
+            document.getElementById("editProjectManager").value,
+          );
+          const materialsLines = document
+            .getElementById("editProjectMaterials")
+            .value.split("\n")
+            .map((s) => s.trim())
+            .filter(Boolean);
+          const notes = document
+            .getElementById("editProjectNotes")
+            .value.trim();
+
+          if (!name || !managerId) {
+            alert("Nome e responsável são obrigatórios.");
+            return;
+          }
+
+          const manager = people.find((p) => p.id === managerId);
+          proj.name = name;
+          proj.managerId = managerId;
+          proj.managerName = manager ? manager.name : "";
+          proj.members = editModalSelectedWorkers.map((w) => ({
+            id: w.id,
+            name: w.name,
+            email: w.email,
+            role: w.role,
+          }));
+          proj.materials = materialsLines;
+          proj.notes = notes;
+
+          renderProjects();
+          bootstrap.Modal.getInstance(
+            document.getElementById("editProjectModal"),
+          ).hide();
+        });
+
+      // delete from edit modal
+      document
+        .getElementById("deleteProjectButton")
+        .addEventListener("click", function () {
+          const idx = parseInt(document.getElementById("editProjectId").value);
+          if (isNaN(idx)) return;
+          if (!confirm("Tem a certeza que deseja eliminar este projeto?"))
+            return;
+          projects.splice(idx, 1);
+          renderProjects();
+          bootstrap.Modal.getInstance(
+            document.getElementById("editProjectModal"),
+          ).hide();
+        });
+
+      // helper escape
+      function escapeHtml(str) {
+        if (!str) return "";
+        return String(str).replace(/[&<>"'`=\/]/g, function (s) {
+          return {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;",
+            "/": "&#x2F;",
+            "`": "&#x60;",
+            "=": "&#x3D;",
+          }[s];
+        });
+      }
+
+      // init
+      populateManagerSelects();
+      renderMaterialsList();
+      renderCreateSelectedWorkers();
+      renderProjects();
+    </script>
+  </body>
+</html>

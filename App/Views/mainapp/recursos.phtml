@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recursos — Projeto Empreendedorismo</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" type="text/css" href="style.css" />
+
+    <style>
+      /* pequenas classes locais */
+      .low-stock {
+        background: linear-gradient(90deg, #fff7ed, #fffaf0);
+        border-left: 4px solid #f59e0b;
+      }
+      .out-stock {
+        background: linear-gradient(90deg, #fff0f0, #fff7f7);
+        border-left: 4px solid #ef4444;
+      }
+      .in-stock {
+        background: linear-gradient(90deg, #f0fdf4, #f7fff7);
+        border-left: 4px solid #10b981;
+      }
+      .qty-box {
+        min-width: 90px;
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container py-4">
+      <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+          <h1>Recursos</h1>
+          <p class="subtitle muted">Estado do stock e quantidades</p>
+        </div>
+        <div class="text-end">
+          <button
+            class="btn btn-primary custom"
+            data-bs-toggle="modal"
+            data-bs-target="#addResourceModal"
+          >
+            + Novo Recurso
+          </button>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <div class="input-group" style="max-width: 480px">
+          <input
+            id="resourceSearch"
+            class="form-control"
+            placeholder="Pesquisar recurso..."
+          />
+          <button class="btn btn-outline-secondary" id="clearSearch">
+            Limpar
+          </button>
+        </div>
+      </div>
+
+      <div id="resourcesGrid" class="row g-3"></div>
+
+      <footer class="mt-4 muted">
+        © <span id="year"></span> Projeto Empreendedorismo — ISCTE
+      </footer>
+    </div>
+
+    <!-- Modal: Adicionar / Editar recurso -->
+    <div
+      class="modal fade"
+      id="addResourceModal"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addResourceTitle">Novo Recurso</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Fechar"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="resourceForm">
+              <input type="hidden" id="resourceId" />
+              <div class="mb-3">
+                <label class="form-label">Nome do Recurso</label>
+                <input id="resourceName" class="form-control" required />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">SKU / Código</label>
+                <input id="resourceSKU" class="form-control" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Unidade</label>
+                <input
+                  id="resourceUnit"
+                  class="form-control"
+                  placeholder="ex: kg, m³, un"
+                />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Quantidade em stock</label>
+                <input
+                  id="resourceQty"
+                  type="number"
+                  min="0"
+                  class="form-control"
+                  value="0"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Nota</label>
+                <input id="resourceNote" class="form-control" />
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">
+              Cancelar
+            </button>
+            <button
+              class="btn btn-danger"
+              id="deleteResourceBtn"
+              style="display: none"
+            >
+              Eliminar
+            </button>
+            <button class="btn btn-primary" id="saveResourceBtn">
+              Guardar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // dados simulados — substituir por fetch API se necessário
+      const STORAGE_KEY = "proj_recursos_v1";
+      let resources = JSON.parse(
+        localStorage.getItem(STORAGE_KEY) || "null",
+      ) || [
+        {
+          id: 1,
+          name: "Cimento",
+          sku: "CIM-001",
+          unit: "saco 50kg",
+          qty: 120,
+          note: "",
+        },
+        { id: 2, name: "Areia", sku: "ARE-002", unit: "m³", qty: 8, note: "" },
+        { id: 3, name: "Aço", sku: "ACO-010", unit: "kg", qty: 420, note: "" },
+        {
+          id: 4,
+          name: "Tijolos",
+          sku: "TIJ-100",
+          unit: "un",
+          qty: 0,
+          note: "Entrega prevista",
+        },
+      ];
+
+      const LOW_THRESHOLD = 10; // quantidade abaixo da qual é considerado "baixo stock"
+
+      document.getElementById("year").textContent = new Date().getFullYear();
+
+      function save() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(resources));
+      }
+
+      function renderResources(filter = "") {
+        const grid = document.getElementById("resourcesGrid");
+        grid.innerHTML = "";
+        const q = filter.trim().toLowerCase();
+        const list = resources.filter(
+          (r) =>
+            !q ||
+            r.name.toLowerCase().includes(q) ||
+            (r.sku || "").toLowerCase().includes(q),
+        );
+        if (!list.length) {
+          grid.innerHTML =
+            '<div class="col-12"><div class="project-card p-3"><div class="muted">Nenhum recurso encontrado</div></div></div>';
+          return;
+        }
+
+        list.forEach((r) => {
+          const stateClass =
+            r.qty === 0
+              ? "out-stock"
+              : r.qty <= LOW_THRESHOLD
+                ? "low-stock"
+                : "in-stock";
+          const col = document.createElement("div");
+          col.className = "col-md-6 col-lg-4";
+          col.innerHTML = `
+          <div class="project-card p-3 ${stateClass}">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div style="font-weight:800">${escapeHtml(r.name)}</div>
+                <div class="muted" style="font-size:.9rem">${escapeHtml(r.sku || "")} · ${escapeHtml(r.unit || "")}</div>
+              </div>
+              <div class="text-end">
+                <button class="btn btn-sm btn-outline-secondary me-2" data-action="edit" data-id="${r.id}">Editar</button>
+              </div>
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between mt-3">
+              <div>
+                <div class="muted" style="font-size:.85rem">Quantidade</div>
+                <div style="font-weight:800; font-size:1.05rem">${r.qty} <small class="muted">${escapeHtml(r.unit || "")}</small></div>
+                ${r.note ? `<div class="muted" style="font-size:.85rem;margin-top:6px">${escapeHtml(r.note)}</div>` : ""}
+              </div>
+
+              <div class="qty-box">
+                <button class="btn btn-sm btn-outline-secondary" data-action="dec" data-id="${r.id}">−</button>
+                <input class="form-control form-control-sm text-center" type="number" data-id="${r.id}" value="${r.qty}" style="width:80px">
+                <button class="btn btn-sm btn-outline-secondary" data-action="inc" data-id="${r.id}">+</button>
+              </div>
+            </div>
+          </div>
+        `;
+          grid.appendChild(col);
+        });
+
+        // attach events (delegation within grid)
+        grid.querySelectorAll("button[data-action]").forEach((btn) => {
+          const action = btn.getAttribute("data-action");
+          const id = parseInt(btn.getAttribute("data-id"));
+          btn.addEventListener("click", () => {
+            if (action === "inc") changeQty(id, 1);
+            if (action === "dec") changeQty(id, -1);
+            if (action === "edit") openEditResource(id);
+          });
+        });
+
+        grid
+          .querySelectorAll('input[type="number"][data-id]')
+          .forEach((input) => {
+            input.addEventListener("change", () => {
+              const id = parseInt(input.getAttribute("data-id"));
+              const val = parseFloat(input.value) || 0;
+              setQty(id, val);
+            });
+          });
+      }
+
+      function changeQty(id, delta) {
+        const idx = resources.findIndex((r) => r.id === id);
+        if (idx === -1) return;
+        resources[idx].qty = Math.max(0, (resources[idx].qty || 0) + delta);
+        save();
+        renderResources(document.getElementById("resourceSearch").value);
+      }
+
+      function setQty(id, qty) {
+        const idx = resources.findIndex((r) => r.id === id);
+        if (idx === -1) return;
+        resources[idx].qty = Math.max(0, qty);
+        save();
+        renderResources(document.getElementById("resourceSearch").value);
+      }
+
+      function openEditResource(id = null) {
+        const modalEl = document.getElementById("addResourceModal");
+        const modal = new bootstrap.Modal(modalEl);
+        document.getElementById("deleteResourceBtn").style.display = "none";
+        document.getElementById("addResourceTitle").textContent = id
+          ? "Editar Recurso"
+          : "Novo Recurso";
+        document.getElementById("resourceForm").reset();
+        document.getElementById("resourceId").value = "";
+
+        if (id) {
+          const r = resources.find((x) => x.id === id);
+          if (!r) return;
+          document.getElementById("resourceId").value = r.id;
+          document.getElementById("resourceName").value = r.name;
+          document.getElementById("resourceSKU").value = r.sku || "";
+          document.getElementById("resourceUnit").value = r.unit || "";
+          document.getElementById("resourceQty").value = r.qty || 0;
+          document.getElementById("resourceNote").value = r.note || "";
+          document.getElementById("deleteResourceBtn").style.display =
+            "inline-block";
+        }
+        modal.show();
+      }
+
+      document
+        .getElementById("saveResourceBtn")
+        .addEventListener("click", () => {
+          const idVal = document.getElementById("resourceId").value;
+          const name = document.getElementById("resourceName").value.trim();
+          if (!name) {
+            alert("Nome do recurso obrigatório");
+            return;
+          }
+          const sku = document.getElementById("resourceSKU").value.trim();
+          const unit = document.getElementById("resourceUnit").value.trim();
+          const qty = Math.max(
+            0,
+            parseFloat(document.getElementById("resourceQty").value) || 0,
+          );
+          const note = document.getElementById("resourceNote").value.trim();
+
+          if (idVal) {
+            const id = parseInt(idVal);
+            const idx = resources.findIndex((r) => r.id === id);
+            if (idx !== -1) {
+              resources[idx] = {
+                ...resources[idx],
+                name,
+                sku,
+                unit,
+                qty,
+                note,
+              };
+            }
+          } else {
+            const newRes = { id: Date.now(), name, sku, unit, qty, note };
+            resources.unshift(newRes);
+          }
+          save();
+          renderResources(document.getElementById("resourceSearch").value);
+          bootstrap.Modal.getInstance(
+            document.getElementById("addResourceModal"),
+          ).hide();
+        });
+
+      document
+        .getElementById("deleteResourceBtn")
+        .addEventListener("click", () => {
+          const idVal = document.getElementById("resourceId").value;
+          if (!idVal) return;
+          if (!confirm("Eliminar recurso?")) return;
+          const id = parseInt(idVal);
+          resources = resources.filter((r) => r.id !== id);
+          save();
+          renderResources(document.getElementById("resourceSearch").value);
+          bootstrap.Modal.getInstance(
+            document.getElementById("addResourceModal"),
+          ).hide();
+        });
+
+      // search
+      document
+        .getElementById("resourceSearch")
+        .addEventListener("input", (e) => {
+          renderResources(e.target.value);
+        });
+      document.getElementById("clearSearch").addEventListener("click", () => {
+        document.getElementById("resourceSearch").value = "";
+        renderResources("");
+      });
+
+      // small helper
+      function escapeHtml(s) {
+        if (!s) return "";
+        return String(s).replace(
+          /[&<>"'`=\/]/g,
+          (c) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+              "/": "&#x2F;",
+              "`": "&#x60;",
+              "=": "&#x3D;",
+            })[c],
+        );
+      }
+
+      // init
+      renderResources();
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

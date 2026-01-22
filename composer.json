@@ -1,0 +1,21 @@
+{
+  "name": "empreendedorismo/miniframework",
+  "require": {
+    "php": ">= 7.0",
+    "phpmailer/phpmailer": "^7.0"
+  },
+  "authors": [
+    {
+      "name": "Pedro Matos"
+    },
+    {
+      "name": "Tiago Sousa"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "App\\": "App/",
+      "MF\\": "vendor/MF/"
+    }
+  }
+}
