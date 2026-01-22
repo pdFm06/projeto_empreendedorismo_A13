@@ -35,11 +35,16 @@
         </button>
       </div>
 
-      <!-- Sitio Equipass -->
+      <!-- Grid Equipas -->
       <div class="row g-4 mb-5" id="teamsGrid"></div>
 
       <!-- MODAL CRIAR EQUIPA -->
-      <div class="modal fade" id="createTeamModal" tabindex="-1">
+      <div
+        class="modal fade"
+        id="createTeamModal"
+        tabindex="-1"
+        aria-hidden="true"
+      >
         <div class="modal-dialog">
           <div class="modal-content">
             <div class="modal-header">
@@ -85,7 +90,11 @@
               <button class="btn btn-secondary" data-bs-dismiss="modal">
                 Cancelar
               </button>
-              <button class="btn btn-primary" id="createTeamButton">
+              <button
+                type="button"
+                class="btn btn-primary"
+                id="createTeamButton"
+              >
                 Criar Equipa
               </button>
             </div>
@@ -94,7 +103,12 @@
       </div>
 
       <!-- MODAL ADICIONAR MEMBRO -->
-      <div class="modal fade" id="addMemberModal" tabindex="-1">
+      <div
+        class="modal fade"
+        id="addMemberModal"
+        tabindex="-1"
+        aria-hidden="true"
+      >
         <div class="modal-dialog">
           <div class="modal-content">
             <div class="modal-header">
@@ -133,7 +147,11 @@
               <button class="btn btn-secondary" data-bs-dismiss="modal">
                 Cancelar
               </button>
-              <button class="btn btn-primary" id="addMemberButton">
+              <button
+                type="button"
+                class="btn btn-primary"
+                id="addMemberButton"
+              >
                 Adicionar
               </button>
             </div>
@@ -145,24 +163,52 @@
         © <span id="year"></span> Projeto Empreendedorismo — ISCTE · Grupo A13
       </footer>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- SCRIPT -->
     <script>
       document.getElementById("year").textContent = new Date().getFullYear();
 
-      // ⚠️ AQUI VAI VIR A TUA BASE DE DADOS (ex: fetch para API)
+      // Simulação DB
       const people = [
         { id: 1, name: "João Silva", email: "joao.silva@iscte.pt" },
-      ]; // <- VAI SER SUBSTITUÍDO
+      ];
 
       let teams = [];
       let currentTeamIndex = null;
 
+      // ===== Helpers modais (IMPORTANTES) =====
+      function showModal(id) {
+        const el = document.getElementById(id);
+        const modal = bootstrap.Modal.getOrCreateInstance(el);
+        modal.show();
+        return modal;
+      }
+
+      function hideModal(id) {
+        const el = document.getElementById(id);
+        const modal = bootstrap.Modal.getOrCreateInstance(el);
+        modal.hide();
+      }
+
+      function forceCleanBackdrops() {
+        // remove backdrops órfãos
+        document.querySelectorAll(".modal-backdrop").forEach((b) => b.remove());
+        // remove bloqueios no body
+        document.body.classList.remove("modal-open");
+        document.body.style.removeProperty("padding-right");
+        document.body.style.removeProperty("overflow");
+      }
+
+      // sempre que um modal fecha, limpamos o que ficar preso
+      ["createTeamModal", "addMemberModal"].forEach((id) => {
+        const el = document.getElementById(id);
+        el.addEventListener("hidden.bs.modal", forceCleanBackdrops);
+      });
+
       // -------------------------
       //  LÓGICA DE EQUIPAS
       // -------------------------
-
       function populateLeadersSelect() {
         const select = document.getElementById("teamLeader");
         select.innerHTML = '<option value="">Selecione um líder</option>';
@@ -194,14 +240,15 @@
       document
         .getElementById("createTeamButton")
         .addEventListener("click", () => {
-          const name = document.getElementById("teamName").value;
+          const name = document.getElementById("teamName").value.trim();
           const leaderId = parseInt(
             document.getElementById("teamLeader").value,
           );
-          const desc = document.getElementById("teamDescription").value;
+          const desc = document.getElementById("teamDescription").value.trim();
 
           const leader = people.find((p) => p.id === leaderId);
-          if (!leader) return alert("Selecione um líder");
+          if (!name) return alert("Indique o nome da equipa.");
+          if (!leader) return alert("Selecione um líder.");
 
           teams.push({
             name,
@@ -212,10 +259,7 @@
           });
 
           renderTeams();
-
-          bootstrap.Modal.getInstance(
-            document.getElementById("createTeamModal"),
-          ).hide();
+          hideModal("createTeamModal");
           document.getElementById("teamForm").reset();
         });
 
@@ -223,10 +267,11 @@
         .getElementById("addMemberButton")
         .addEventListener("click", () => {
           const id = parseInt(document.getElementById("memberSelect").value);
-          const role = document.getElementById("memberRole").value;
+          const role = document.getElementById("memberRole").value.trim();
 
           const person = people.find((p) => p.id === id);
-          if (!person) return alert("Selecione um membro");
+          if (!person) return alert("Selecione um membro.");
+          if (!role) return alert("Indique a função.");
 
           teams[currentTeamIndex].members.push({
             id: person.id,
@@ -235,10 +280,7 @@
           });
 
           renderTeams();
-
-          bootstrap.Modal.getInstance(
-            document.getElementById("addMemberModal"),
-          ).hide();
+          hideModal("addMemberModal");
           document.getElementById("memberForm").reset();
         });
 
@@ -250,31 +292,47 @@
           grid.insertAdjacentHTML(
             "beforeend",
             `
-          <div class="col-md-6 col-lg-4">
-            <div class="project-card team-card">
-              <h3>${t.name}</h3>
-              <p><strong>Líder:</strong> ${t.leader}</p>
-              <p><strong>Membros:</strong> ${t.members.length}</p>
-              <p>${t.description || "Sem descrição"}</p>
-              <div>
-                ${t.members.map((m) => `<div class="member-badge">${m.name} (${m.role})</div>`).join("")}
+            <div class="col-md-6 col-lg-4">
+              <div class="project-card team-card">
+                <h3>${t.name}</h3>
+                <p><strong>Líder:</strong> ${t.leader}</p>
+                <p><strong>Membros:</strong> ${t.members.length}</p>
+                <p>${t.description || "Sem descrição"}</p>
+                <div>
+                  ${t.members
+                    .map(
+                      (m) =>
+                        `<div class="member-badge">${m.name} (${m.role})</div>`,
+                    )
+                    .join("")}
+                </div>
+                <button class="view-btn mt-3" data-team-index="${i}">
+                  + Adicionar Membro
+                </button>
               </div>
-              <button class="view-btn mt-3" onclick="openAddMemberModal(${i})">+ Adicionar Membro</button>
             </div>
-          </div>
-        `,
+          `,
           );
+        });
+
+        // bind eventos dos botões “Adicionar Membro”
+        grid.querySelectorAll("button[data-team-index]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const i = parseInt(btn.getAttribute("data-team-index"));
+            openAddMemberModal(i);
+          });
         });
       }
 
       function openAddMemberModal(i) {
         currentTeamIndex = i;
         populateMembersSelect();
-        new bootstrap.Modal(document.getElementById("addMemberModal")).show();
+        showModal("addMemberModal");
       }
 
       // Inicialização
       populateLeadersSelect();
+      renderTeams();
     </script>
   </body>
 </html>

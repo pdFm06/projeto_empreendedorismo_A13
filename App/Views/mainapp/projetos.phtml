@@ -15,6 +15,7 @@
     />
     <link rel="stylesheet" type="text/css" href="style.css" />
   </head>
+
   <body>
     <div class="container py-4">
       <!-- PAGE HEADER -->
@@ -34,7 +35,7 @@
         </button>
       </div>
 
-      <!-- Sitio Projetos-->
+      <!-- Grid Projetos -->
       <div class="row g-4 mb-5" id="projectsGrid"></div>
 
       <!-- Modal Criar Projeto -->
@@ -74,6 +75,7 @@
                         required
                       />
                     </div>
+
                     <div class="mb-3">
                       <label for="projectManager" class="form-label"
                         >Responsável</label
@@ -82,6 +84,7 @@
                         <option value="">Selecione responsável</option>
                       </select>
                     </div>
+
                     <div class="mb-3">
                       <label for="projectDeadline" class="form-label"
                         >Prazo</label
@@ -93,6 +96,7 @@
                         required
                       />
                     </div>
+
                     <div class="mb-3">
                       <label for="projectTeam" class="form-label"
                         >Equipa (nome)</label
@@ -120,10 +124,12 @@
                           >Nenhum trabalhador selecionado</small
                         >
                       </div>
+
+                      <!-- ALTERADO: removi onclick e usei id -->
                       <button
                         type="button"
                         class="btn btn-sm btn-outline-secondary"
-                        onclick="openSelectWorkersModal('create')"
+                        id="openWorkersFromCreate"
                       >
                         + Adicionar Trabalhadores
                       </button>
@@ -178,7 +184,7 @@
         </div>
       </div>
 
-      <!-- Modal Seleccionar Trabalhadores (usado por criação e edição) -->
+      <!-- Modal Seleccionar Trabalhadores -->
       <div
         class="modal fade"
         id="selectWorkersModal"
@@ -386,6 +392,38 @@
       let editModalIndex = null;
       let editModalSelectedWorkers = [];
 
+      // === HELPERS MODAL (IMPORTANTES) ===
+      function showModal(id) {
+        const el = document.getElementById(id);
+        const modal = bootstrap.Modal.getOrCreateInstance(el);
+        modal.show();
+        return modal;
+      }
+
+      function hideModal(id) {
+        const el = document.getElementById(id);
+        const modal = bootstrap.Modal.getOrCreateInstance(el);
+        modal.hide();
+      }
+
+      function forceCleanBackdrops() {
+        // remove backdrops órfãos
+        document.querySelectorAll(".modal-backdrop").forEach((b) => b.remove());
+
+        // remove bloqueios do body
+        document.body.classList.remove("modal-open");
+        document.body.style.removeProperty("padding-right");
+        document.body.style.removeProperty("overflow");
+      }
+
+      // sempre que qualquer modal fecha, garante limpeza
+      ["createProjectModal", "selectWorkersModal", "editProjectModal"].forEach(
+        (id) => {
+          const el = document.getElementById(id);
+          el.addEventListener("hidden.bs.modal", forceCleanBackdrops);
+        },
+      );
+
       // populate manager selects
       function populateManagerSelects() {
         const managerSelects = [
@@ -436,7 +474,6 @@
         const list = document.getElementById("workersModalList");
         list.innerHTML = "";
 
-        // decide which set is currently selected to prefill role & checked
         const selected =
           mode === "create"
             ? createModalSelectedWorkers
@@ -461,11 +498,18 @@
           list.appendChild(item);
         });
 
-        const modal = new bootstrap.Modal(
-          document.getElementById("selectWorkersModal"),
-        );
-        modal.show();
+        showModal("selectWorkersModal");
       }
+
+      // botão do create modal -> abre modal workers (evita modal sobre modal)
+      document
+        .getElementById("openWorkersFromCreate")
+        .addEventListener("click", () => {
+          // fecha primeiro o modal de criação
+          hideModal("createProjectModal");
+          // abre o de trabalhadores ligeiramente depois
+          setTimeout(() => openSelectWorkersModal("create"), 150);
+        });
 
       // confirm selection from selectWorkersModal
       document
@@ -500,14 +544,16 @@
             createModalSelectedWorkers = selected;
             renderCreateSelectedWorkers();
           } else {
-            // edit mode: set editModalSelectedWorkers and update edit modal UI
             editModalSelectedWorkers = selected;
             renderEditSelectedWorkers();
           }
 
-          bootstrap.Modal.getInstance(
-            document.getElementById("selectWorkersModal"),
-          ).hide();
+          hideModal("selectWorkersModal");
+
+          // se vieste do create, reabre o modal create para continuares
+          if (selectWorkersMode === "create") {
+            setTimeout(() => showModal("createProjectModal"), 150);
+          }
         });
 
       function renderCreateSelectedWorkers() {
@@ -521,7 +567,9 @@
         createModalSelectedWorkers.forEach((w) => {
           const el = document.createElement("div");
           el.className = "badge bg-light border mb-1 me-1";
-          el.innerHTML = `${escapeHtml(w.name)} <small class="muted">(${escapeHtml(w.role || "—")})</small>`;
+          el.innerHTML = `${escapeHtml(w.name)} <small class="muted">(${escapeHtml(
+            w.role || "—",
+          )})</small>`;
           container.appendChild(el);
         });
       }
@@ -537,7 +585,9 @@
         editModalSelectedWorkers.forEach((w) => {
           const el = document.createElement("div");
           el.className = "badge bg-light border mb-1 me-1";
-          el.innerHTML = `${escapeHtml(w.name)} <small class="muted">(${escapeHtml(w.role || "—")})</small>`;
+          el.innerHTML = `${escapeHtml(w.name)} <small class="muted">(${escapeHtml(
+            w.role || "—",
+          )})</small>`;
           container.appendChild(el);
         });
       }
@@ -557,11 +607,15 @@
 
           const materialsPreview =
             proj.materials && proj.materials.length
-              ? `<small class="muted">${proj.materials.slice(0, 3).join(", ")}${proj.materials.length > 3 ? "…" : ""}</small>`
+              ? `<small class="muted">${proj.materials
+                  .slice(0, 3)
+                  .join(", ")}${proj.materials.length > 3 ? "…" : ""}</small>`
               : '<small class="muted">Sem materiais registados</small>';
 
           const notesPreview = proj.notes
-            ? `<p class="muted" style="margin:6px 0 0">${escapeHtml(proj.notes.substring(0, 120))}${proj.notes.length > 120 ? "…" : ""}</p>`
+            ? `<p class="muted" style="margin:6px 0 0">${escapeHtml(
+                proj.notes.substring(0, 120),
+              )}${proj.notes.length > 120 ? "…" : ""}</p>`
             : "";
 
           const card = document.createElement("div");
@@ -571,7 +625,9 @@
             <div style="display:flex;justify-content:space-between;align-items:center">
               <div>
                 <div class="project-status status-em-progresso">Em Progresso</div>
-                <h3 class="project-title" style="margin-top:8px">${escapeHtml(proj.name)}</h3>
+                <h3 class="project-title" style="margin-top:8px">${escapeHtml(
+                  proj.name,
+                )}</h3>
               </div>
               <div class="text-end">
                 <button class="btn btn-sm btn-outline-secondary me-2" data-action="edit" data-index="${idx}">Editar</button>
@@ -580,9 +636,15 @@
             </div>
 
             <div class="project-info" style="margin-top:12px">
-              <div class="info-row"><span class="info-label">Responsável:</span><span class="info-value">${escapeHtml(proj.managerName || "")}</span></div>
-              <div class="info-row"><span class="info-label">Prazo:</span><span class="info-value">${escapeHtml(proj.deadline || "")}</span></div>
-              <div class="info-row"><span class="info-label">Equipa:</span><span class="info-value">${escapeHtml(proj.teamName || "")}</span></div>
+              <div class="info-row"><span class="info-label">Responsável:</span><span class="info-value">${escapeHtml(
+                proj.managerName || "",
+              )}</span></div>
+              <div class="info-row"><span class="info-label">Prazo:</span><span class="info-value">${escapeHtml(
+                proj.deadline || "",
+              )}</span></div>
+              <div class="info-row"><span class="info-label">Equipa:</span><span class="info-value">${escapeHtml(
+                proj.teamName || "",
+              )}</span></div>
             </div>
 
             <div style="margin-top:12px;border-top:1px solid rgba(0,0,0,0.06);padding-top:12px">
@@ -607,7 +669,7 @@
 
         // events
         grid.querySelectorAll("button[data-action]").forEach((btn) => {
-          btn.addEventListener("click", (e) => {
+          btn.addEventListener("click", () => {
             const action = btn.getAttribute("data-action");
             const index = parseInt(btn.getAttribute("data-index"));
             if (action === "edit") openEditModal(index);
@@ -645,10 +707,7 @@
           );
           const selectedMaterials = checkedMatEls
             .map((i) => i.value)
-            .concat(
-              // include any materials manually added to the createModalSelectedMaterials (kept in createModalSelectedMaterials)
-              createModalSelectedMaterials || [],
-            );
+            .concat(createModalSelectedMaterials || []);
 
           const manager = people.find((p) => p.id === managerId);
 
@@ -678,9 +737,8 @@
           document.getElementById("projectForm").reset();
           renderMaterialsList();
           renderCreateSelectedWorkers();
-          bootstrap.Modal.getInstance(
-            document.getElementById("createProjectModal"),
-          ).hide();
+
+          hideModal("createProjectModal");
         });
 
       // open edit modal
@@ -707,10 +765,7 @@
         }));
         renderEditSelectedWorkers();
 
-        const modal = new bootstrap.Modal(
-          document.getElementById("editProjectModal"),
-        );
-        modal.show();
+        showModal("editProjectModal");
       }
 
       // manage workers button in edit modal
@@ -761,9 +816,7 @@
           proj.notes = notes;
 
           renderProjects();
-          bootstrap.Modal.getInstance(
-            document.getElementById("editProjectModal"),
-          ).hide();
+          hideModal("editProjectModal");
         });
 
       // delete from edit modal
@@ -776,9 +829,7 @@
             return;
           projects.splice(idx, 1);
           renderProjects();
-          bootstrap.Modal.getInstance(
-            document.getElementById("editProjectModal"),
-          ).hide();
+          hideModal("editProjectModal");
         });
 
       // helper escape
