@@ -218,6 +218,30 @@ class Route extends Bootstrap {
             'action' => 'editarProjeto'
         );
 
+        $routes['adicionar_equipa_projeto'] = array(
+            'route' => '/adicionar_equipa_projeto',
+            'controller' => 'mainappController',
+            'action' => 'adicionarEquipaProjeto'
+        );
+
+        $routes['remover_equipa_projeto'] = array(
+            'route' => '/remover_equipa_projeto',
+            'controller' => 'mainappController',
+            'action' => 'removerEquipaProjeto'
+        );
+
+        $routes['adicionar_recurso_projeto'] = array(
+            'route' => '/adicionar_recurso_projeto',
+            'controller' => 'mainappController',
+            'action' => 'adicionarRecursoProjeto'
+        );
+
+        $routes['remover_recurso_projeto'] = array(
+            'route' => '/remover_recurso_projeto',
+            'controller' => 'mainappController',
+            'action' => 'removerRecursoProjeto'
+        );
+
 
         $this->setRoutes($routes);
     }

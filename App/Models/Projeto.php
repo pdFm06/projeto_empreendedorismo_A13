@@ -130,4 +130,60 @@ class Projeto extends Model
 
         return $stmt->execute();
     }
+
+    public function listarEquipas($projetoId)
+    {
+        $query = "
+            SELECT
+                pe.id,
+                pe.projeto_id,
+                pe.equipa_id,
+                e.nome,
+                e.especialidade,
+                e.lider_id,
+                t.nome AS lider_nome
+            FROM projeto_equipa pe
+            INNER JOIN equipas e ON e.id = pe.equipa_id
+            LEFT JOIN trabalhadores t ON t.id = e.lider_id
+            WHERE pe.projeto_id = :projeto_id
+            ORDER BY e.nome ASC
+        ";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':projeto_id', $projetoId);
+        $stmt->execute();
+
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    public function adicionarEquipa($projetoId, $equipaId)
+    {
+        $query = "
+            INSERT INTO projeto_equipa
+            (projeto_id, equipa_id)
+            VALUES
+            (:projeto_id, :equipa_id)
+        ";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':projeto_id', $projetoId);
+        $stmt->bindValue(':equipa_id', $equipaId);
+
+        return $stmt->execute();
+    }
+
+    public function removerEquipa($projetoId, $equipaId)
+    {
+        $query = "
+            DELETE FROM projeto_equipa
+            WHERE projeto_id = :projeto_id
+            AND equipa_id = :equipa_id
+        ";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':projeto_id', $projetoId);
+        $stmt->bindValue(':equipa_id', $equipaId);
+
+        return $stmt->execute();
+    }
 }

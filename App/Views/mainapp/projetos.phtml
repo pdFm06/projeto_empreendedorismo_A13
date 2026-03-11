@@ -67,6 +67,13 @@
     font-weight: 600;
   }
 
+  .team-box {
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 12px;
+    padding: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
   footer {
     color: #6b7280;
     font-size: 0.9rem;
@@ -94,6 +101,22 @@
   <div class="row g-4 mb-5" id="projectsGrid">
     <?php if (!empty($this->view->projetos)) { ?>
       <?php foreach ($this->view->projetos as $projeto) { ?>
+        <?php
+          $equipasIds = [];
+          if (!empty($projeto['equipas'])) {
+            foreach ($projeto['equipas'] as $eq) {
+              $equipasIds[] = $eq['equipa_id'];
+            }
+          }
+
+          $recursosIds = [];
+          if (!empty($projeto['recursos'])) {
+            foreach ($projeto['recursos'] as $recursoProjeto) {
+              $recursosIds[] = $recursoProjeto['recurso_id'];
+            }
+          }
+        ?>
+
         <div class="col-md-6 col-lg-4">
           <div class="project-card">
             <div style="display:flex;justify-content:space-between;align-items:center">
@@ -168,6 +191,162 @@
                 <?= htmlspecialchars($projeto['descricao']) ?>
               </p>
             <?php } ?>
+
+            <div class="mt-3">
+              <strong>Equipas associadas</strong>
+
+              <?php if (!empty($projeto['equipas'])) { ?>
+                <div class="mt-2">
+                  <?php foreach ($projeto['equipas'] as $eq) { ?>
+                    <div class="team-box d-flex justify-content-between align-items-center">
+                      <div>
+                        <div><strong><?= htmlspecialchars($eq['nome']) ?></strong></div>
+                        <div class="muted" style="font-size:.92rem;">
+                          <?= !empty($eq['especialidade']) ? htmlspecialchars($eq['especialidade']) : 'Sem especialidade definida' ?>
+                          <?php if (!empty($eq['lider_nome'])) { ?>
+                            — Líder: <?= htmlspecialchars($eq['lider_nome']) ?>
+                          <?php } ?>
+                        </div>
+                      </div>
+
+                      <a
+                        href="/remover_equipa_projeto?projeto_id=<?= $projeto['id'] ?>&equipa_id=<?= $eq['equipa_id'] ?>"
+                        class="btn btn-sm btn-outline-danger"
+                        onclick="return confirm('Remover esta equipa do projeto?')"
+                      >
+                        Remover
+                      </a>
+                    </div>
+                  <?php } ?>
+                </div>
+              <?php } else { ?>
+                <div class="muted mt-2">Ainda não existem equipas associadas a este projeto.</div>
+              <?php } ?>
+            </div>
+
+            <div class="mt-3">
+              <form method="post" action="/adicionar_equipa_projeto" class="d-flex gap-2">
+                <input type="hidden" name="projeto_id" value="<?= $projeto['id'] ?>">
+
+                <select name="equipa_id" class="form-control" required>
+                  <option value="">Seleciona uma equipa</option>
+
+                  <?php
+                    $haEquipasDisponiveis = false;
+
+                    foreach ($this->view->equipasDisponiveis as $equipaDisponivel) {
+                      if (!in_array($equipaDisponivel['id'], $equipasIds)) {
+                        $haEquipasDisponiveis = true;
+                  ?>
+                        <option value="<?= $equipaDisponivel['id'] ?>">
+                          <?= htmlspecialchars($equipaDisponivel['nome']) ?>
+                          <?php if (!empty($equipaDisponivel['especialidade'])) { ?>
+                            — <?= htmlspecialchars($equipaDisponivel['especialidade']) ?>
+                          <?php } ?>
+                        </option>
+                  <?php
+                      }
+                    }
+                  ?>
+                </select>
+
+                <button
+                  type="submit"
+                  class="btn btn-primary"
+                  <?= !$haEquipasDisponiveis ? 'disabled' : '' ?>
+                >
+                  Adicionar
+                </button>
+              </form>
+
+              <?php if (!$haEquipasDisponiveis) { ?>
+                <div class="muted mt-2" style="font-size:.92rem;">
+                  Todas as equipas disponíveis já estão associadas a este projeto.
+                </div>
+              <?php } ?>
+            </div>
+
+            <div class="mt-3">
+              <strong>Recursos associados</strong>
+
+              <?php if (!empty($projeto['recursos'])) { ?>
+                <div class="mt-2">
+                  <?php foreach ($projeto['recursos'] as $recursoProjeto) { ?>
+                    <div class="team-box d-flex justify-content-between align-items-center">
+                      <div>
+                        <div><strong><?= htmlspecialchars($recursoProjeto['nome']) ?></strong></div>
+                        <div class="muted" style="font-size:.92rem;">
+                          <?= htmlspecialchars($recursoProjeto['tipo']) ?>
+                          — Afetado: <?= (int)$recursoProjeto['quantidade_afetada'] ?>
+                          — Stock atual: <?= (int)$recursoProjeto['quantidade'] ?>
+                        </div>
+                      </div>
+
+                      <a
+                        href="/remover_recurso_projeto?projeto_id=<?= $projeto['id'] ?>&recurso_id=<?= $recursoProjeto['recurso_id'] ?>"
+                        class="btn btn-sm btn-outline-danger"
+                        onclick="return confirm('Remover este recurso do projeto?')"
+                      >
+                        Remover
+                      </a>
+                    </div>
+                  <?php } ?>
+                </div>
+              <?php } else { ?>
+                <div class="muted mt-2">Ainda não existem recursos associados a este projeto.</div>
+              <?php } ?>
+            </div>
+
+            <div class="mt-3">
+              <form method="post" action="/adicionar_recurso_projeto" class="d-flex gap-2 flex-wrap">
+                <input type="hidden" name="projeto_id" value="<?= $projeto['id'] ?>">
+
+                <select name="recurso_id" class="form-control" required style="min-width: 220px;">
+                  <option value="">Seleciona um recurso</option>
+
+                  <?php
+                    $haRecursosDisponiveis = false;
+
+                    foreach ($this->view->recursosDisponiveis as $recursoDisponivel) {
+                      if (!in_array($recursoDisponivel['id'], $recursosIds)) {
+                        $haRecursosDisponiveis = true;
+                  ?>
+                        <option value="<?= $recursoDisponivel['id'] ?>">
+                          <?= htmlspecialchars($recursoDisponivel['nome']) ?>
+                          — <?= htmlspecialchars($recursoDisponivel['tipo']) ?>
+                          — Stock: <?= (int)$recursoDisponivel['quantidade'] ?>
+                        </option>
+                  <?php
+                      }
+                    }
+                  ?>
+                </select>
+
+                <input
+                  type="number"
+                  name="quantidade_afetada"
+                  class="form-control"
+                  min="1"
+                  placeholder="Qtd."
+                  required
+                  style="max-width: 100px;"
+                >
+
+                <button
+                  type="submit"
+                  class="btn btn-primary"
+                  <?= !$haRecursosDisponiveis ? 'disabled' : '' ?>
+                >
+                  Adicionar
+                </button>
+              </form>
+
+              <?php if (!$haRecursosDisponiveis) { ?>
+                <div class="muted mt-2" style="font-size:.92rem;">
+                  Todos os recursos disponíveis já estão associados a este projeto.
+                </div>
+              <?php } ?>
+            </div>
 
             <div class="project-footer" style="margin-top:12px">
               <a href="#" class="view-btn">Ver Detalhes</a>
@@ -362,21 +541,21 @@
                 </div>
 
                 <div class="mb-3">
-    <label for="editProjectManager" class="form-label">Responsável</label>
-    <select
-        id="editProjectManager"
-        name="gestor_id"
-        class="form-control"
-        required
-    >
-        <option value="">Selecione responsável</option>
-        <?php foreach ($this->view->gestores as $gestor) { ?>
-            <option value="<?= $gestor['id'] ?>">
-                <?= htmlspecialchars($gestor['email']) ?>
-            </option>
-        <?php } ?>
-    </select>
-</div>
+                  <label for="editProjectManager" class="form-label">Responsável</label>
+                  <select
+                    id="editProjectManager"
+                    name="gestor_id"
+                    class="form-control"
+                    required
+                  >
+                    <option value="">Selecione responsável</option>
+                    <?php foreach ($this->view->gestores as $gestor) { ?>
+                      <option value="<?= $gestor['id'] ?>">
+                        <?= htmlspecialchars($gestor['email']) ?>
+                      </option>
+                    <?php } ?>
+                  </select>
+                </div>
 
                 <div class="mb-3">
                   <label for="editProjectDeadline" class="form-label">Prazo</label>

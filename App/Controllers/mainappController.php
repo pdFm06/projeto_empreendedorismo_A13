@@ -5,6 +5,7 @@ namespace App\Controllers;
 #Recursos
 use MF\Controller\Action;
 use MF\Model\Container;
+use App\Lib\Flash;
 
 
 class MainappController extends Action {
@@ -350,9 +351,20 @@ class MainappController extends Action {
     {
         $projeto = Container::getModel('Projeto');
         $utilizador = Container::getModel('Utilizador');
+        $equipa = Container::getModel('Equipa');
+        $recurso = Container::getModel('Recurso');
 
-        $this->view->projetos = $projeto->listar();
+        $projetos = $projeto->listar();
+
+        foreach ($projetos as &$p) {
+            $p['equipas'] = $projeto->listarEquipas($p['id']);
+            $p['recursos'] = $recurso->listarPorProjeto($p['id']);
+        }
+
+        $this->view->projetos = $projetos;
         $this->view->gestores = $utilizador->listarTodos();
+        $this->view->equipasDisponiveis = $equipa->listar();
+        $this->view->recursosDisponiveis = $recurso->listar();
 
         $this->render('projetos', 'layout_dashboard');
     }
@@ -360,6 +372,12 @@ class MainappController extends Action {
     public function criarProjeto()
     {
         session_start();
+
+        if (empty(trim($_POST['nome'] ?? ''))) {
+            Flash::set('warning', 'O nome do projeto é obrigatório.');
+            header('Location: /projetos');
+            exit;
+        }
 
         $projeto = Container::getModel('Projeto');
 
@@ -372,7 +390,11 @@ class MainappController extends Action {
         $projeto->__set('orcamento', $_POST['orcamento'] ?? 0);
         $projeto->__set('gestor_id', $_POST['gestor_id'] ?? ($_SESSION['id'] ?? 1));
 
-        $projeto->criar();
+        if ($projeto->criar()) {
+            Flash::set('success', 'Projeto criado com sucesso.');
+        } else {
+            Flash::set('danger', 'Não foi possível criar o projeto.');
+        }
 
         header('Location: /projetos');
         exit;
@@ -385,6 +407,13 @@ class MainappController extends Action {
         $id = $_POST['id'] ?? null;
 
         if (!$id) {
+            Flash::set('warning', 'Projeto inválido.');
+            header('Location: /projetos');
+            exit;
+        }
+
+        if (empty(trim($_POST['nome'] ?? ''))) {
+            Flash::set('warning', 'O nome do projeto é obrigatório.');
             header('Location: /projetos');
             exit;
         }
@@ -401,7 +430,11 @@ class MainappController extends Action {
         $projeto->__set('estado', $_POST['estado'] ?? 'planeado');
         $projeto->__set('orcamento', $_POST['orcamento'] ?? 0);
 
-        $projeto->editar();
+        if ($projeto->editar()) {
+            Flash::set('success', 'Projeto atualizado com sucesso.');
+        } else {
+            Flash::set('danger', 'Não foi possível atualizar o projeto.');
+        }
 
         header('Location: /projetos');
         exit;
@@ -410,12 +443,92 @@ class MainappController extends Action {
 
     public function eliminarProjeto()
     {
+        session_start();
+
         $id = $_GET['id'] ?? null;
 
-        if ($id) {
-            $projeto = Container::getModel('Projeto');
-            $projeto->eliminar($id);
+        if (!$id) {
+            Flash::set('warning', 'Projeto inválido.');
+            header('Location: /projetos');
+            exit;
         }
+
+        $projeto = Container::getModel('Projeto');
+
+        if ($projeto->eliminar($id)) {
+            Flash::set('success', 'Projeto eliminado com sucesso.');
+        } else {
+            Flash::set('danger', 'Não foi possível eliminar o projeto.');
+        }
+
+        header('Location: /projetos');
+        exit;
+    }
+
+    public function adicionarEquipaProjeto()
+    {
+        $projetoId = $_POST['projeto_id'] ?? null;
+        $equipaId = $_POST['equipa_id'] ?? null;
+
+        if (!$projetoId || !$equipaId) {
+            header('Location: /projetos');
+            exit;
+        }
+
+        $projeto = Container::getModel('Projeto');
+        $projeto->adicionarEquipa($projetoId, $equipaId);
+
+        header('Location: /projetos');
+        exit;
+    }
+
+    public function removerEquipaProjeto()
+    {
+        $projetoId = $_GET['projeto_id'] ?? null;
+        $equipaId = $_GET['equipa_id'] ?? null;
+
+        if (!$projetoId || !$equipaId) {
+            header('Location: /projetos');
+            exit;
+        }
+
+        $projeto = Container::getModel('Projeto');
+        $projeto->removerEquipa($projetoId, $equipaId);
+
+        header('Location: /projetos');
+        exit;
+    }
+
+    public function adicionarRecursoProjeto()
+    {
+        $projetoId = $_POST['projeto_id'] ?? null;
+        $recursoId = $_POST['recurso_id'] ?? null;
+        $quantidadeAfetada = $_POST['quantidade_afetada'] ?? null;
+
+        if (!$projetoId || !$recursoId || !$quantidadeAfetada) {
+            header('Location: /projetos');
+            exit;
+        }
+
+        $recurso = Container::getModel('Recurso');
+        $recurso->adicionarAoProjeto($projetoId, $recursoId, max(1, (int)$quantidadeAfetada));
+
+        header('Location: /projetos');
+        exit;
+    }
+
+    public function removerRecursoProjeto()
+    {
+        $projetoId = $_GET['projeto_id'] ?? null;
+        $recursoId = $_GET['recurso_id'] ?? null;
+
+        if (!$projetoId || !$recursoId) {
+            header('Location: /projetos');
+            exit;
+        }
+
+        $recurso = Container::getModel('Recurso');
+        $recurso->removerDoProjeto($projetoId, $recursoId);
 
         header('Location: /projetos');
         exit;

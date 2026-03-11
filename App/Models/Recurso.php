@@ -112,4 +112,62 @@ class Recurso extends Model
 
         return $stmt->execute();
     }
+
+    public function listarPorProjeto($projetoId)
+    {
+        $query = "
+            SELECT
+                pr.id,
+                pr.projeto_id,
+                pr.recurso_id,
+                pr.quantidade_afetada,
+                r.nome,
+                r.tipo,
+                r.quantidade,
+                r.custo_unitario,
+                r.estado
+            FROM projeto_recurso pr
+            INNER JOIN recursos r ON r.id = pr.recurso_id
+            WHERE pr.projeto_id = :projeto_id
+            ORDER BY r.nome ASC
+        ";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':projeto_id', $projetoId);
+        $stmt->execute();
+
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    public function adicionarAoProjeto($projetoId, $recursoId, $quantidadeAfetada)
+    {
+        $query = "
+            INSERT INTO projeto_recurso
+            (projeto_id, recurso_id, quantidade_afetada)
+            VALUES
+            (:projeto_id, :recurso_id, :quantidade_afetada)
+        ";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':projeto_id', $projetoId);
+        $stmt->bindValue(':recurso_id', $recursoId);
+        $stmt->bindValue(':quantidade_afetada', $quantidadeAfetada);
+
+        return $stmt->execute();
+    }
+
+    public function removerDoProjeto($projetoId, $recursoId)
+    {
+        $query = "
+            DELETE FROM projeto_recurso
+            WHERE projeto_id = :projeto_id
+            AND recurso_id = :recurso_id
+        ";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':projeto_id', $projetoId);
+        $stmt->bindValue(':recurso_id', $recursoId);
+
+        return $stmt->execute();
+    }
 }
