@@ -87,7 +87,7 @@ class Route extends Bootstrap {
             'action' => 'logout'
         );
 
-        # MainApp
+        ## MainApp
 
         $routes['dashboard'] = array(
             'route' => '/dashboard',
@@ -113,10 +113,30 @@ class Route extends Bootstrap {
             'action' => 'trabalhadores'
         );
 
+        #Projetos
+
         $routes['projetos'] = array(
             'route' => '/projetos',
             'controller' => 'mainappController',
             'action' => 'projetos'
+        );
+
+        $routes['criar_projeto'] = array(
+            'route' => '/criar_projeto',
+            'controller' => 'mainappController',
+            'action' => 'criarProjeto'
+        );
+
+        $routes['eliminar_projeto'] = array(
+            'route' => '/eliminar_projeto',
+            'controller' => 'mainappController',
+            'action' => 'eliminarProjeto'
+        );
+
+        $routes['editar_projeto'] = array(
+            'route' => '/editar_projeto',
+            'controller' => 'mainappController',
+            'action' => 'editarProjeto'
         );
 
 

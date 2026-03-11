@@ -114,4 +114,12 @@ class Utilizador extends Model {
         $stmt->bindValue(':email', $this->__get('email'));
         return $stmt->execute();
     }
+
+    public function listarTodos() {
+        $query = "SELECT id, email FROM utilizadores ORDER BY email ASC";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }
