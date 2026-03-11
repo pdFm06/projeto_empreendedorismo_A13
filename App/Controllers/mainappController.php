@@ -14,9 +14,120 @@ class MainappController extends Action {
         $this->render('dashboard', 'layout_dashboard');
     }
 
-    public function equipas() {
+    # Equipas
+
+    public function equipas()
+    {
+        $equipa = Container::getModel('Equipa');
+        $trabalhador = Container::getModel('Trabalhador');
+
+        $equipas = $equipa->listar();
+
+        foreach ($equipas as &$eq) {
+            $eq['membros'] = $equipa->listarMembros($eq['id']);
+        }
+
+        $this->view->equipas = $equipas;
+        $this->view->trabalhadores = $trabalhador->listar();
 
         $this->render('equipas', 'layout_dashboard');
+    }
+
+    public function criarEquipa()
+    {
+        $equipa = Container::getModel('Equipa');
+
+        $equipa->__set('nome', $_POST['nome'] ?? '');
+        $equipa->__set('especialidade', $_POST['especialidade'] ?? '');
+        $equipa->__set('lider_id', $_POST['lider_id'] ?? null);
+
+        $equipaId = $equipa->criar();
+
+        if ($equipaId && !empty($_POST['lider_id'])) {
+            $equipa->adicionarMembro($equipaId, $_POST['lider_id']);
+        }
+
+        header('Location: /equipas');
+        exit;
+    }
+
+    public function editarEquipa()
+    {
+        $id = $_POST['id'] ?? null;
+
+        if (!$id) {
+            header('Location: /equipas');
+            exit;
+        }
+
+        $equipa = Container::getModel('Equipa');
+
+        $equipa->__set('id', $id);
+        $equipa->__set('nome', $_POST['nome'] ?? '');
+        $equipa->__set('especialidade', $_POST['especialidade'] ?? '');
+        $equipa->__set('lider_id', $_POST['lider_id'] ?? null);
+
+        $equipa->editar();
+
+        if (!empty($_POST['lider_id'])) {
+            // garante que o líder também está como membro
+            $membros = $equipa->listarMembros($id);
+            $idsMembros = array_column($membros, 'trabalhador_id');
+
+            if (!in_array((int) $_POST['lider_id'], array_map('intval', $idsMembros))) {
+                $equipa->adicionarMembro($id, $_POST['lider_id']);
+            }
+        }
+
+        header('Location: /equipas');
+        exit;
+    }
+
+    public function eliminarEquipa()
+    {
+        $id = $_GET['id'] ?? null;
+
+        if ($id) {
+            $equipa = Container::getModel('Equipa');
+            $equipa->eliminar($id);
+        }
+
+        header('Location: /equipas');
+        exit;
+    }
+
+    public function adicionarMembroEquipa()
+    {
+        $equipaId = $_POST['equipa_id'] ?? null;
+        $trabalhadorId = $_POST['trabalhador_id'] ?? null;
+
+        if (!$equipaId || !$trabalhadorId) {
+            header('Location: /equipas');
+            exit;
+        }
+
+        $equipa = Container::getModel('Equipa');
+        $equipa->adicionarMembro($equipaId, $trabalhadorId);
+
+        header('Location: /equipas');
+        exit;
+    }
+
+    public function removerMembroEquipa()
+    {
+        $equipaId = $_GET['equipa_id'] ?? null;
+        $trabalhadorId = $_GET['trabalhador_id'] ?? null;
+
+        if (!$equipaId || !$trabalhadorId) {
+            header('Location: /equipas');
+            exit;
+        }
+
+        $equipa = Container::getModel('Equipa');
+        $equipa->removerMembro($equipaId, $trabalhadorId);
+
+        header('Location: /equipas');
+        exit;
     }
 
     public function recursos() {
@@ -24,9 +135,70 @@ class MainappController extends Action {
         $this->render('recursos', 'layout_dashboard');
     }
 
-    public function trabalhadores() {
+    # Trabalhadores
+
+    public function trabalhadores()
+    {
+        $trabalhador = Container::getModel('Trabalhador');
+
+        $this->view->trabalhadores = $trabalhador->listar();
 
         $this->render('trabalhadores', 'layout_dashboard');
+    }
+
+    public function criarTrabalhador()
+    {
+        $trabalhador = Container::getModel('Trabalhador');
+
+        $trabalhador->__set('nome', $_POST['nome'] ?? '');
+        $trabalhador->__set('email', $_POST['email'] ?? '');
+        $trabalhador->__set('telefone', $_POST['telefone'] ?? '');
+        $trabalhador->__set('funcao', $_POST['funcao'] ?? '');
+        $trabalhador->__set('salario_dia', $_POST['salario_dia'] ?? 0);
+        $trabalhador->__set('estado', $_POST['estado'] ?? 'ativo');
+
+        $trabalhador->criar();
+
+        header('Location: /trabalhadores');
+        exit;
+    }
+
+    public function editarTrabalhador()
+    {
+        $id = $_POST['id'] ?? null;
+
+        if (!$id) {
+            header('Location: /trabalhadores');
+            exit;
+        }
+
+        $trabalhador = Container::getModel('Trabalhador');
+
+        $trabalhador->__set('id', $id);
+        $trabalhador->__set('nome', $_POST['nome'] ?? '');
+        $trabalhador->__set('email', $_POST['email'] ?? '');
+        $trabalhador->__set('telefone', $_POST['telefone'] ?? '');
+        $trabalhador->__set('funcao', $_POST['funcao'] ?? '');
+        $trabalhador->__set('salario_dia', $_POST['salario_dia'] ?? 0);
+        $trabalhador->__set('estado', $_POST['estado'] ?? 'ativo');
+
+        $trabalhador->editar();
+
+        header('Location: /trabalhadores');
+        exit;
+    }
+
+    public function eliminarTrabalhador()
+    {
+        $id = $_GET['id'] ?? null;
+
+        if ($id) {
+            $trabalhador = Container::getModel('Trabalhador');
+            $trabalhador->eliminar($id);
+        }
+
+        header('Location: /trabalhadores');
+        exit;
     }
 
     # Projetos

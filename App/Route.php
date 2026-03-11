@@ -95,10 +95,42 @@ class Route extends Bootstrap {
             'action' => 'dashboard'
         );
 
+        # Equipas
+
         $routes['equipas'] = array(
             'route' => '/equipas',
             'controller' => 'mainappController',
             'action' => 'equipas'
+        );
+
+        $routes['criar_equipa'] = array(
+            'route' => '/criar_equipa',
+            'controller' => 'mainappController',
+            'action' => 'criarEquipa'
+        );
+
+        $routes['editar_equipa'] = array(
+            'route' => '/editar_equipa',
+            'controller' => 'mainappController',
+            'action' => 'editarEquipa'
+        );
+
+        $routes['eliminar_equipa'] = array(
+            'route' => '/eliminar_equipa',
+            'controller' => 'mainappController',
+            'action' => 'eliminarEquipa'
+        );
+
+        $routes['adicionar_membro_equipa'] = array(
+            'route' => '/adicionar_membro_equipa',
+            'controller' => 'mainappController',
+            'action' => 'adicionarMembroEquipa'
+        );
+
+        $routes['remover_membro_equipa'] = array(
+            'route' => '/remover_membro_equipa',
+            'controller' => 'mainappController',
+            'action' => 'removerMembroEquipa'
         );
 
         $routes['recursos'] = array(
@@ -106,11 +138,32 @@ class Route extends Bootstrap {
             'controller' => 'mainappController',
             'action' => 'recursos'
         );
+        
 
-        $routes['trabalhadores'] = array(
+        # Trabalhadores
+
+        $routes['trabalhadores'] = array(   
             'route' => '/trabalhadores',
             'controller' => 'mainappController',
             'action' => 'trabalhadores'
+        );
+
+        $routes['criar_trabalhador'] = array(   
+            'route' => '/criar_trabalhador',
+            'controller' => 'mainappController',
+            'action' => 'criarTrabalhador'
+        );
+
+        $routes['editar_trabalhador'] = array(
+            'route' => '/editar_trabalhador',
+            'controller' => 'mainappController',
+            'action' => 'editarTrabalhador'
+        );
+
+        $routes['eliminar_trabalhador'] = array(
+            'route' => '/eliminar_trabalhador',
+            'controller' => 'mainappController',
+            'action' => 'eliminarTrabalhador'
         );
 
         #Projetos

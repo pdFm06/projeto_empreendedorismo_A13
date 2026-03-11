@@ -1,739 +1,326 @@
-<!DOCTYPE html>
-<html lang="pt">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Trabalhadores — Projeto Empreendedorismo</title>
+<style>
+  .person-card {
+    cursor: default;
+  }
 
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" type="text/css" href="public/style.css" />
+  .avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 8px;
+    background: #eef2ff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    color: #1e293b;
+    font-size: 1.1rem;
+  }
 
-    <style>
-      .person-card {
-        cursor: default;
-      }
-      .avatar {
-        width: 72px;
-        height: 72px;
-        border-radius: 8px;
-        object-fit: cover;
-        background: #eef2ff;
-        display: inline-block;
-      }
-      .badge-role {
-        font-weight: 700;
-        color: #0f1724;
-        background: transparent;
-      }
-      .list-empty {
-        color: #6b7280;
-        font-size: 0.95rem;
-      }
-    </style>
-  </head>
+  .list-empty {
+    color: #6b7280;
+    font-size: 0.95rem;
+  }
 
-  <body>
-    <div class="container py-4">
-      <div class="page-header d-flex justify-content-between align-items-start">
-        <div>
-          <h1>Trabalhadores</h1>
-          <p class="subtitle muted">
-            Perfis com informação pessoal, doenças e acidentes
-          </p>
-        </div>
-        <div class="text-end">
-          <button
-            class="btn btn-primary custom"
-            data-bs-toggle="modal"
-            data-bs-target="#createPersonModal"
-          >
-            + Novo Trabalhador
-          </button>
-        </div>
-      </div>
+  .page-header h1 {
+    font-weight: 800;
+    margin-bottom: 0.35rem;
+  }
 
-      <div class="row g-4 mb-5" id="PessoasGrid"></div>
+  .subtitle {
+    color: #6b7280;
+    margin-bottom: 0;
+  }
 
-      <footer class="mt-4 muted">
-        © <span id="year"></span> Projeto Empreendedorismo — ISCTE ·
-        Desenvolvido pelo Grupo A13
-      </footer>
+  .project-card {
+    background: #fff;
+    border-radius: 18px;
+    padding: 1.25rem;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+    height: 100%;
+  }
+
+  .muted {
+    color: #6b7280;
+  }
+
+  .status-badge {
+    display: inline-block;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .status-ativo {
+    background: #d4edda;
+    color: #155724;
+  }
+
+  .status-inativo {
+    background: #f8d7da;
+    color: #721c24;
+  }
+
+  footer {
+    color: #6b7280;
+    font-size: 0.9rem;
+    text-align: center;
+    margin-top: 2rem;
+  }
+</style>
+
+<div class="container py-4">
+  <div class="page-header d-flex justify-content-between align-items-start">
+    <div>
+      <h1>Trabalhadores</h1>
+      <p class="subtitle muted">
+        Gestão de perfis dos trabalhadores da empresa
+      </p>
     </div>
 
-    <!-- Modal: Criar / Editar Pessoa -->
-    <div
-      class="modal fade"
-      id="createPersonModal"
-      tabindex="-1"
-      aria-hidden="true"
-    >
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="createPersonTitle">Novo Trabalhador</h5>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Fechar"
-            ></button>
-          </div>
-          <div class="modal-body">
-            <form id="personForm">
-              <input type="hidden" id="personId" />
-              <div class="mb-3">
-                <label class="form-label">Nome</label>
-                <input id="personName" class="form-control" required />
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Email</label>
-                <input id="personEmail" type="email" class="form-control" />
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Telefone</label>
-                <input id="personPhone" class="form-control" />
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Data de Nascimento</label>
-                <input id="personDOB" type="date" class="form-control" />
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Função</label>
-                <input id="personRole" class="form-control" />
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Notas pessoais</label>
-                <textarea
-                  id="personNotes"
-                  class="form-control"
-                  rows="3"
-                ></textarea>
-              </div>
-            </form>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-secondary" data-bs-dismiss="modal">
-              Cancelar
-            </button>
-            <button
-              class="btn btn-danger"
-              id="deletePersonBtn"
-              style="display: none"
-              type="button"
-            >
-              Eliminar
-            </button>
-            <button class="btn btn-primary" id="savePersonBtn" type="button">
-              Guardar
-            </button>
-          </div>
-        </div>
-      </div>
+    <div class="text-end">
+      <button
+        class="btn btn-primary custom"
+        data-bs-toggle="modal"
+        data-bs-target="#createPersonModal"
+        id="openCreateWorkerBtn"
+      >
+        + Novo Trabalhador
+      </button>
     </div>
+  </div>
 
-    <!-- Modal: Perfil -->
-    <div class="modal fade" id="profileModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="profileName">Perfil</h5>
-            <div class="ms-3">
-              <small id="profileRole" class="muted"></small>
-            </div>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Fechar"
-            ></button>
-          </div>
+  <div class="row g-4 mb-5" id="PessoasGrid">
+    <?php if (!empty($this->view->trabalhadores)) { ?>
+      <?php foreach ($this->view->trabalhadores as $trabalhador) { ?>
+        <div class="col-md-6 col-lg-4">
+          <div class="project-card person-card p-3">
+            <div class="d-flex align-items-center gap-3">
+              <div class="avatar">
+                <?php
+                  $iniciais = '';
+                  $partesNome = explode(' ', trim($trabalhador['nome']));
+                  foreach ($partesNome as $parte) {
+                    if (!empty($parte)) {
+                      $iniciais .= mb_strtoupper(mb_substr($parte, 0, 1));
+                    }
+                  }
+                  echo htmlspecialchars(mb_substr($iniciais, 0, 2));
+                ?>
+              </div>
 
-          <div class="modal-body">
-            <div class="row g-4">
-              <div class="col-md-4 text-center">
-                <div id="profileAvatar" class="avatar mb-3"></div>
-                <div><strong id="profileEmail"></strong></div>
-                <div class="muted" id="profilePhone"></div>
-                <div class="muted mt-2" id="profileDOB"></div>
-                <div class="mt-3">
-                  <button
-                    class="btn btn-sm btn-outline-secondary"
-                    id="openEditFromProfile"
-                    type="button"
-                  >
-                    Editar Perfil
-                  </button>
+              <div class="flex-grow-1">
+                <div style="font-weight:800">
+                  <?= htmlspecialchars($trabalhador['nome']) ?>
+                </div>
+
+                <div class="muted">
+                  <?= !empty($trabalhador['funcao']) ? htmlspecialchars($trabalhador['funcao']) : 'Sem função definida' ?>
+                </div>
+
+                <div class="muted" style="font-size:.95rem">
+                  <?= !empty($trabalhador['email']) ? htmlspecialchars($trabalhador['email']) : 'Sem email' ?>
+                </div>
+
+                <div class="mt-2">
+                  <span class="status-badge status-<?= htmlspecialchars($trabalhador['estado']) ?>">
+                    <?= ucfirst(htmlspecialchars($trabalhador['estado'])) ?>
+                  </span>
                 </div>
               </div>
+            </div>
 
-              <div class="col-md-8">
-                <h6>Notas pessoais</h6>
-                <p id="profileNotes" class="muted"></p>
+            <div class="mt-3">
+              <div class="muted" style="font-size:.95rem">
+                <strong>Telefone:</strong>
+                <?= !empty($trabalhador['telefone']) ? htmlspecialchars($trabalhador['telefone']) : '—' ?>
+              </div>
 
-                <hr />
-
-                <div
-                  class="d-flex justify-content-between align-items-center mb-2"
-                >
-                  <h6>Doenças / Condições</h6>
-                  <button
-                    class="btn btn-sm btn-outline-primary"
-                    id="addIllnessBtn"
-                    type="button"
-                  >
-                    + Adicionar
-                  </button>
-                </div>
-                <div id="illnessList"></div>
-
-                <hr />
-
-                <div
-                  class="d-flex justify-content-between align-items-center mb-2"
-                >
-                  <h6>Acidentes / Incidentes</h6>
-                  <button
-                    class="btn btn-sm btn-outline-primary"
-                    id="addAccidentBtn"
-                    type="button"
-                  >
-                    + Adicionar
-                  </button>
-                </div>
-                <div id="accidentList"></div>
+              <div class="muted" style="font-size:.95rem">
+                <strong>Salário/dia:</strong>
+                <?= number_format((float)$trabalhador['salario_dia'], 2, ',', '.') ?> €
               </div>
             </div>
-          </div>
 
-          <div class="modal-footer">
-            <button
-              class="btn btn-secondary"
-              data-bs-dismiss="modal"
-              type="button"
-            >
-              Fechar
-            </button>
+            <div class="d-flex gap-2 mt-3">
+              <button
+                class="btn btn-sm btn-outline-secondary edit-worker-btn"
+                data-bs-toggle="modal"
+                data-bs-target="#createPersonModal"
+                data-id="<?= $trabalhador['id'] ?>"
+                data-nome="<?= htmlspecialchars($trabalhador['nome']) ?>"
+                data-email="<?= htmlspecialchars($trabalhador['email'] ?? '') ?>"
+                data-telefone="<?= htmlspecialchars($trabalhador['telefone'] ?? '') ?>"
+                data-funcao="<?= htmlspecialchars($trabalhador['funcao'] ?? '') ?>"
+                data-salario="<?= htmlspecialchars($trabalhador['salario_dia'] ?? 0) ?>"
+                data-estado="<?= htmlspecialchars($trabalhador['estado'] ?? 'ativo') ?>"
+                type="button"
+              >
+                Editar
+              </button>
+
+              <a
+                href="/eliminar_trabalhador?id=<?= $trabalhador['id'] ?>"
+                class="btn btn-sm btn-outline-danger ms-auto"
+                onclick="return confirm('Eliminar trabalhador?')"
+              >
+                Eliminar
+              </a>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
-
-    <!-- Modal: Adicionar Doença -->
-    <div
-      class="modal fade"
-      id="addIllnessModal"
-      tabindex="-1"
-      aria-hidden="true"
-    >
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Adicionar Doença / Condição</h5>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Fechar"
-            ></button>
-          </div>
-          <div class="modal-body">
-            <form id="illnessForm">
-              <div class="mb-3">
-                <label class="form-label">Data</label>
-                <input
-                  id="illnessDate"
-                  type="date"
-                  class="form-control"
-                  required
-                />
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Descrição</label>
-                <textarea
-                  id="illnessDesc"
-                  class="form-control"
-                  rows="3"
-                  required
-                ></textarea>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Notas</label>
-                <input id="illnessNotes" class="form-control" />
-              </div>
-            </form>
-          </div>
-          <div class="modal-footer">
-            <button
-              class="btn btn-secondary"
-              data-bs-dismiss="modal"
-              type="button"
-            >
-              Cancelar
-            </button>
-            <button class="btn btn-primary" id="saveIllnessBtn" type="button">
-              Guardar
-            </button>
-          </div>
+      <?php } ?>
+    <?php } else { ?>
+      <div class="col-12">
+        <div class="alert alert-info">
+          Ainda não existem trabalhadores registados.
         </div>
       </div>
-    </div>
+    <?php } ?>
+  </div>
 
-    <!-- Modal: Adicionar Acidente -->
-    <div
-      class="modal fade"
-      id="addAccidentModal"
-      tabindex="-1"
-      aria-hidden="true"
-    >
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Adicionar Acidente / Incidente</h5>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Fechar"
-            ></button>
+  <footer class="mt-4 muted">
+    © <span id="year"></span> Projeto Empreendedorismo — ISCTE ·
+    Desenvolvido pelo Grupo A13
+  </footer>
+</div>
+
+<!-- Modal: Criar / Editar Trabalhador -->
+<div
+  class="modal fade"
+  id="createPersonModal"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="createPersonTitle">Novo Trabalhador</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+        ></button>
+      </div>
+
+      <div class="modal-body">
+        <form id="personForm" method="post" action="/criar_trabalhador">
+          <input type="hidden" id="personId" name="id" />
+
+          <div class="mb-3">
+            <label class="form-label" for="personName">Nome</label>
+            <input id="personName" name="nome" class="form-control" required />
           </div>
-          <div class="modal-body">
-            <form id="accidentForm">
-              <div class="mb-3">
-                <label class="form-label">Data</label>
-                <input
-                  id="accidentDate"
-                  type="date"
-                  class="form-control"
-                  required
-                />
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Descrição</label>
-                <textarea
-                  id="accidentDesc"
-                  class="form-control"
-                  rows="3"
-                  required
-                ></textarea>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Gravidade</label>
-                <select id="accidentSeverity" class="form-control">
-                  <option value="Leve">Leve</option>
-                  <option value="Moderado">Moderado</option>
-                  <option value="Grave">Grave</option>
-                </select>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Notas</label>
-                <input id="accidentNotes" class="form-control" />
-              </div>
-            </form>
+
+          <div class="mb-3">
+            <label class="form-label" for="personEmail">Email</label>
+            <input id="personEmail" name="email" type="email" class="form-control" />
           </div>
-          <div class="modal-footer">
-            <button
-              class="btn btn-secondary"
-              data-bs-dismiss="modal"
-              type="button"
-            >
-              Cancelar
-            </button>
-            <button class="btn btn-primary" id="saveAccidentBtn" type="button">
-              Guardar
-            </button>
+
+          <div class="mb-3">
+            <label class="form-label" for="personPhone">Telefone</label>
+            <input id="personPhone" name="telefone" class="form-control" />
           </div>
-        </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="personRole">Função</label>
+            <input id="personRole" name="funcao" class="form-control" />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="personSalary">Salário por dia</label>
+            <input
+              id="personSalary"
+              name="salario_dia"
+              type="number"
+              step="0.01"
+              min="0"
+              class="form-control"
+            />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="personStatus">Estado</label>
+            <select id="personStatus" name="estado" class="form-control">
+              <option value="ativo">Ativo</option>
+              <option value="inativo">Inativo</option>
+            </select>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button
+          class="btn btn-secondary"
+          data-bs-dismiss="modal"
+          type="button"
+        >
+          Cancelar
+        </button>
+
+        <a
+          href="#"
+          class="btn btn-danger"
+          id="deletePersonBtn"
+          style="display: none"
+          onclick="return confirm('Eliminar trabalhador permanentemente?')"
+        >
+          Eliminar
+        </a>
+
+        <button
+          class="btn btn-primary"
+          id="savePersonBtn"
+          type="submit"
+          form="personForm"
+        >
+          Guardar
+        </button>
       </div>
     </div>
+  </div>
+</div>
 
-    <!-- Bootstrap JS (APENAS UMA VEZ) -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  document.getElementById("year").textContent = new Date().getFullYear();
 
-    <script>
-      // ====== Helpers modais (IMPORTANTES) ======
-      function showModal(id) {
-        const el = document.getElementById(id);
-        const modal = bootstrap.Modal.getOrCreateInstance(el);
-        modal.show();
-        return modal;
-      }
+  const form = document.getElementById("personForm");
+  const modalTitle = document.getElementById("createPersonTitle");
+  const deleteBtn = document.getElementById("deletePersonBtn");
+  const openCreateBtn = document.getElementById("openCreateWorkerBtn");
 
-      function hideModal(id) {
-        const el = document.getElementById(id);
-        const modal = bootstrap.Modal.getOrCreateInstance(el);
-        modal.hide();
-      }
+  openCreateBtn.addEventListener("click", function () {
+    modalTitle.textContent = "Novo Trabalhador";
+    form.action = "/criar_trabalhador";
 
-      function forceCleanBackdrops() {
-        document.querySelectorAll(".modal-backdrop").forEach((b) => b.remove());
-        document.body.classList.remove("modal-open");
-        document.body.style.removeProperty("padding-right");
-        document.body.style.removeProperty("overflow");
-      }
+    document.getElementById("personId").value = "";
+    document.getElementById("personName").value = "";
+    document.getElementById("personEmail").value = "";
+    document.getElementById("personPhone").value = "";
+    document.getElementById("personRole").value = "";
+    document.getElementById("personSalary").value = "";
+    document.getElementById("personStatus").value = "ativo";
 
-      [
-        "createPersonModal",
-        "profileModal",
-        "addIllnessModal",
-        "addAccidentModal",
-      ].forEach((id) => {
-        const el = document.getElementById(id);
-        el.addEventListener("hidden.bs.modal", forceCleanBackdrops);
-      });
+    deleteBtn.style.display = "none";
+    deleteBtn.href = "#";
+  });
 
-      // ===== Dados locais (substituir por fetch / API) =====
-      let people = [
-        {
-          id: 1,
-          name: "João Silva",
-          email: "joao.silva@iscte.pt",
-          phone: "912345678",
-          dob: "1990-04-12",
-          role: "Operário",
-          notes: "",
-          illnesses: [],
-          accidents: [],
-        },
-        {
-          id: 2,
-          name: "Ana Costa",
-          email: "ana.costa@iscte.pt",
-          phone: "919876543",
-          dob: "1987-09-30",
-          role: "Encarregado",
-          notes: "",
-          illnesses: [],
-          accidents: [],
-        },
-      ];
+  document.querySelectorAll(".edit-worker-btn").forEach((btn) => {
+    btn.addEventListener("click", function () {
+      modalTitle.textContent = "Editar Trabalhador";
+      form.action = "/editar_trabalhador";
 
-      let currentProfileId = null;
-      document.getElementById("year").textContent = new Date().getFullYear();
+      document.getElementById("personId").value = this.dataset.id || "";
+      document.getElementById("personName").value = this.dataset.nome || "";
+      document.getElementById("personEmail").value = this.dataset.email || "";
+      document.getElementById("personPhone").value = this.dataset.telefone || "";
+      document.getElementById("personRole").value = this.dataset.funcao || "";
+      document.getElementById("personSalary").value = this.dataset.salario || "";
+      document.getElementById("personStatus").value = this.dataset.estado || "ativo";
 
-      // Helpers
-      function escapeHtml(s) {
-        if (!s) return "";
-        return String(s).replace(
-          /[&<>"'`=\/]/g,
-          (c) =>
-            ({
-              "&": "&amp;",
-              "<": "&lt;",
-              ">": "&gt;",
-              '"': "&quot;",
-              "'": "&#39;",
-              "/": "&#x2F;",
-              "`": "&#x60;",
-              "=": "&#x3D;",
-            })[c],
-        );
-      }
-
-      // Render grid
-      function renderPeople() {
-        const grid = document.getElementById("PessoasGrid");
-        grid.innerHTML = "";
-
-        people.forEach((p) => {
-          const col = document.createElement("div");
-          col.className = "col-md-6 col-lg-4";
-          col.innerHTML = `
-            <div class="project-card person-card p-3">
-              <div class="d-flex align-items-center gap-3">
-                <div class="avatar">${escapeHtml(
-                  p.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join(""),
-                )}</div>
-                <div class="flex-grow-1">
-                  <div style="font-weight:800">${escapeHtml(p.name)}</div>
-                  <div class="muted">${escapeHtml(p.role || "")}</div>
-                  <div class="muted" style="font-size:.95rem">${escapeHtml(p.email || "")}</div>
-                </div>
-              </div>
-              <div class="d-flex gap-2 mt-3">
-                <button class="btn btn-sm btn-outline-primary" data-action="view" data-id="${p.id}" type="button">Ver Perfil</button>
-                <button class="btn btn-sm btn-outline-secondary" data-action="edit" data-id="${p.id}" type="button">Editar</button>
-                <button class="btn btn-sm btn-outline-danger ms-auto" data-action="delete" data-id="${p.id}" type="button">Eliminar</button>
-              </div>
-            </div>
-          `;
-          grid.appendChild(col);
-        });
-
-        grid.querySelectorAll("button[data-action]").forEach((btn) => {
-          const id = parseInt(btn.getAttribute("data-id"));
-          const action = btn.getAttribute("data-action");
-          btn.addEventListener("click", () => {
-            if (action === "view") openProfile(id);
-            if (action === "edit") openEditPerson(id);
-            if (action === "delete") {
-              if (confirm("Eliminar trabalhador?")) {
-                people = people.filter((pp) => pp.id !== id);
-                renderPeople();
-              }
-            }
-          });
-        });
-      }
-
-      // Abrir criar/editar
-      function openEditPerson(id = null) {
-        document.getElementById("deletePersonBtn").style.display = "none";
-
-        if (id !== null) {
-          const p = people.find((x) => x.id === id);
-          if (!p) return;
-
-          document.getElementById("createPersonTitle").textContent =
-            "Editar Trabalhador";
-          document.getElementById("personId").value = p.id;
-          document.getElementById("personName").value = p.name;
-          document.getElementById("personEmail").value = p.email || "";
-          document.getElementById("personPhone").value = p.phone || "";
-          document.getElementById("personDOB").value = p.dob || "";
-          document.getElementById("personRole").value = p.role || "";
-          document.getElementById("personNotes").value = p.notes || "";
-          document.getElementById("deletePersonBtn").style.display =
-            "inline-block";
-        } else {
-          document.getElementById("createPersonTitle").textContent =
-            "Novo Trabalhador";
-          document.getElementById("personForm").reset();
-          document.getElementById("personId").value = "";
-        }
-
-        showModal("createPersonModal");
-      }
-
-      // Guardar pessoa
-      document.getElementById("savePersonBtn").addEventListener("click", () => {
-        const idVal = document.getElementById("personId").value;
-        const name = document.getElementById("personName").value.trim();
-        if (!name) return alert("Nome obrigatório");
-
-        const data = {
-          name,
-          email: document.getElementById("personEmail").value.trim(),
-          phone: document.getElementById("personPhone").value.trim(),
-          dob: document.getElementById("personDOB").value,
-          role: document.getElementById("personRole").value.trim(),
-          notes: document.getElementById("personNotes").value.trim(),
-        };
-
-        if (idVal) {
-          const id = parseInt(idVal);
-          const idx = people.findIndex((p) => p.id === id);
-          if (idx >= 0) people[idx] = { ...people[idx], ...data };
-        } else {
-          people.push({
-            id: Date.now(),
-            illnesses: [],
-            accidents: [],
-            ...data,
-          });
-        }
-
-        hideModal("createPersonModal");
-        renderPeople();
-      });
-
-      // Eliminar pessoa (no modal)
-      document
-        .getElementById("deletePersonBtn")
-        .addEventListener("click", () => {
-          const idVal = document.getElementById("personId").value;
-          if (!idVal) return;
-          if (!confirm("Eliminar trabalhador permanentemente?")) return;
-
-          const id = parseInt(idVal);
-          people = people.filter((p) => p.id !== id);
-
-          hideModal("createPersonModal");
-          renderPeople();
-        });
-
-      // Abrir perfil
-      function openProfile(id) {
-        const p = people.find((x) => x.id === id);
-        if (!p) return;
-
-        currentProfileId = id;
-        document.getElementById("profileName").textContent = p.name;
-        document.getElementById("profileRole").textContent = p.role || "";
-        document.getElementById("profileEmail").textContent = p.email || "";
-        document.getElementById("profilePhone").textContent = p.phone || "";
-        document.getElementById("profileDOB").textContent = p.dob
-          ? "Nascimento: " + p.dob
-          : "";
-        document.getElementById("profileNotes").textContent = p.notes || "";
-        document.getElementById("profileAvatar").textContent = p.name
-          .split(" ")
-          .map((n) => n[0])
-          .join("");
-
-        renderIllnessList(p);
-        renderAccidentList(p);
-
-        showModal("profileModal");
-      }
-
-      // Render doenças
-      function renderIllnessList(person) {
-        const container = document.getElementById("illnessList");
-        container.innerHTML = "";
-
-        if (!person.illnesses || !person.illnesses.length) {
-          container.innerHTML =
-            '<div class="list-empty">Nenhuma condição registada</div>';
-          return;
-        }
-
-        person.illnesses.forEach((it, i) => {
-          const el = document.createElement("div");
-          el.className = "border rounded p-2 mb-2";
-          el.innerHTML = `
-            <div style="font-weight:700">${escapeHtml(it.description)}</div>
-            <div class="muted" style="font-size:.9rem">${escapeHtml(it.date)} ${
-              it.notes ? "· " + escapeHtml(it.notes) : ""
-            }</div>
-            <div class="text-end mt-1">
-              <button class="btn btn-sm btn-outline-danger" data-kind="illness" data-index="${i}" type="button">Eliminar</button>
-            </div>
-          `;
-          container.appendChild(el);
-        });
-
-        container
-          .querySelectorAll('button[data-kind="illness"]')
-          .forEach((btn) => {
-            btn.addEventListener("click", () => {
-              const idx = parseInt(btn.getAttribute("data-index"));
-              if (!confirm("Eliminar esta condição?")) return;
-              const personIdx = people.findIndex(
-                (p) => p.id === currentProfileId,
-              );
-              if (personIdx === -1) return;
-              people[personIdx].illnesses.splice(idx, 1);
-              renderIllnessList(people[personIdx]);
-            });
-          });
-      }
-
-      // Render acidentes
-      function renderAccidentList(person) {
-        const container = document.getElementById("accidentList");
-        container.innerHTML = "";
-
-        if (!person.accidents || !person.accidents.length) {
-          container.innerHTML =
-            '<div class="list-empty">Nenhum incidente registado</div>';
-          return;
-        }
-
-        person.accidents.forEach((it, i) => {
-          const el = document.createElement("div");
-          el.className = "border rounded p-2 mb-2";
-          el.innerHTML = `
-            <div style="font-weight:700">${escapeHtml(it.description)}</div>
-            <div class="muted" style="font-size:.9rem">${escapeHtml(it.date)} · Gravidade: ${escapeHtml(it.severity)} ${
-              it.notes ? "· " + escapeHtml(it.notes) : ""
-            }</div>
-            <div class="text-end mt-1">
-              <button class="btn btn-sm btn-outline-danger" data-kind="accident" data-index="${i}" type="button">Eliminar</button>
-            </div>
-          `;
-          container.appendChild(el);
-        });
-
-        container
-          .querySelectorAll('button[data-kind="accident"]')
-          .forEach((btn) => {
-            btn.addEventListener("click", () => {
-              const idx = parseInt(btn.getAttribute("data-index"));
-              if (!confirm("Eliminar este incidente?")) return;
-              const personIdx = people.findIndex(
-                (p) => p.id === currentProfileId,
-              );
-              if (personIdx === -1) return;
-              people[personIdx].accidents.splice(idx, 1);
-              renderAccidentList(people[personIdx]);
-            });
-          });
-      }
-
-      // Abrir adicionar doença/acidente
-      document.getElementById("addIllnessBtn").addEventListener("click", () => {
-        document.getElementById("illnessForm").reset();
-        showModal("addIllnessModal");
-      });
-
-      document
-        .getElementById("addAccidentBtn")
-        .addEventListener("click", () => {
-          document.getElementById("accidentForm").reset();
-          showModal("addAccidentModal");
-        });
-
-      // Guardar doença
-      document
-        .getElementById("saveIllnessBtn")
-        .addEventListener("click", () => {
-          const date = document.getElementById("illnessDate").value;
-          const desc = document.getElementById("illnessDesc").value.trim();
-          const notes = document.getElementById("illnessNotes").value.trim();
-          if (!date || !desc) return alert("Data e descrição obrigatórias");
-
-          const idx = people.findIndex((p) => p.id === currentProfileId);
-          if (idx === -1) return;
-
-          people[idx].illnesses.push({ date, description: desc, notes });
-          hideModal("addIllnessModal");
-          renderIllnessList(people[idx]);
-        });
-
-      // Guardar acidente
-      document
-        .getElementById("saveAccidentBtn")
-        .addEventListener("click", () => {
-          const date = document.getElementById("accidentDate").value;
-          const desc = document.getElementById("accidentDesc").value.trim();
-          const severity = document.getElementById("accidentSeverity").value;
-          const notes = document.getElementById("accidentNotes").value.trim();
-          if (!date || !desc) return alert("Data e descrição obrigatórias");
-
-          const idx = people.findIndex((p) => p.id === currentProfileId);
-          if (idx === -1) return;
-
-          people[idx].accidents.push({
-            date,
-            description: desc,
-            severity,
-            notes,
-          });
-          hideModal("addAccidentModal");
-          renderAccidentList(people[idx]);
-        });
-
-      // Editar a partir do perfil
-      document
-        .getElementById("openEditFromProfile")
-        .addEventListener("click", () => {
-          if (currentProfileId === null) return;
-          hideModal("profileModal");
-          setTimeout(() => openEditPerson(currentProfileId), 150);
-        });
-
-      // Inicializar
-      renderPeople();
-    </script>
-  </body>
-</html>
+      deleteBtn.style.display = "inline-block";
+      deleteBtn.href = "/eliminar_trabalhador?id=" + (this.dataset.id || "");
+    });
+  });
+</script>

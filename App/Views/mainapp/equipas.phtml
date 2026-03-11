@@ -1,338 +1,348 @@
-<!DOCTYPE html>
-<html lang="pt">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Equipas — Projeto Empreendedorismo</title>
+<style>
+  .page-header h1 {
+    font-weight: 800;
+    margin-bottom: 0.35rem;
+  }
 
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
+  .subtitle {
+    color: #6b7280;
+    margin-bottom: 0;
+  }
 
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <div class="container py-4">
-      <!-- PAGE HEADER -->
-      <div class="page-header">
-        <h1>Equipas</h1>
-        <p class="subtitle">Supervisione as suas equipas</p>
-      </div>
+  .team-card {
+    background: #fff;
+    border-radius: 18px;
+    padding: 1.25rem;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+    height: 100%;
+  }
 
-      <!-- NOVA EQUIPA -->
-      <div class="mb-4">
-        <button
-          class="btn btn-primary custom"
-          data-bs-toggle="modal"
-          data-bs-target="#createTeamModal"
-        >
-          + Nova Equipa
-        </button>
-      </div>
+  .team-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 0;
+  }
 
-      <!-- Grid Equipas -->
-      <div class="row g-4 mb-5" id="teamsGrid"></div>
+  .team-meta {
+    display: grid;
+    gap: 0.5rem;
+    margin-top: 12px;
+  }
 
-      <!-- MODAL CRIAR EQUIPA -->
-      <div
-        class="modal fade"
-        id="createTeamModal"
-        tabindex="-1"
-        aria-hidden="true"
-      >
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Criar Nova Equipa</h5>
-              <button
-                type="button"
-                class="btn-close"
-                data-bs-dismiss="modal"
-              ></button>
-            </div>
+  .meta-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+  }
 
-            <div class="modal-body">
-              <form id="teamForm">
-                <div class="mb-3">
-                  <label for="teamName">Nome da Equipa</label>
-                  <input
-                    type="text"
-                    id="teamName"
-                    class="form-control"
-                    required
-                  />
-                </div>
+  .meta-label {
+    color: #6b7280;
+    font-weight: 600;
+  }
 
-                <div class="mb-3">
-                  <label for="teamLeader">Chefe da Equipa</label>
-                  <select id="teamLeader" class="form-control" required>
-                    <option value="">Selecione um Chefe</option>
-                  </select>
-                </div>
+  .meta-value {
+    text-align: right;
+  }
 
-                <div class="mb-3">
-                  <label for="teamDescription">Descrição</label>
-                  <textarea
-                    id="teamDescription"
-                    class="form-control"
-                    rows="3"
-                  ></textarea>
-                </div>
-              </form>
-            </div>
+  .muted {
+    color: #6b7280;
+  }
 
-            <div class="modal-footer">
-              <button class="btn btn-secondary" data-bs-dismiss="modal">
-                Cancelar
-              </button>
-              <button
-                type="button"
-                class="btn btn-primary"
-                id="createTeamButton"
-              >
-                Criar Equipa
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+  .member-box {
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 12px;
+    padding: 0.75rem;
+    margin-top: 0.5rem;
+  }
 
-      <!-- MODAL ADICIONAR MEMBRO -->
-      <div
-        class="modal fade"
-        id="addMemberModal"
-        tabindex="-1"
-        aria-hidden="true"
-      >
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title" id="addMemberModalLabel">
-                Adicionar Membro
-              </h5>
-              <button
-                type="button"
-                class="btn-close"
-                data-bs-dismiss="modal"
-              ></button>
-            </div>
+  footer {
+    color: #6b7280;
+    font-size: 0.9rem;
+    text-align: center;
+    margin-top: 2rem;
+  }
+</style>
 
-            <div class="modal-body">
-              <form id="memberForm">
-                <div class="mb-3">
-                  <label for="memberSelect">Selecione um Membro</label>
-                  <select id="memberSelect" class="form-control" required>
-                    <option value="">Selecione um membro</option>
-                  </select>
-                </div>
-
-                <div class="mb-3">
-                  <label for="memberRole">Função</label>
-                  <input
-                    type="text"
-                    id="memberRole"
-                    class="form-control"
-                    required
-                  />
-                </div>
-              </form>
-            </div>
-
-            <div class="modal-footer">
-              <button class="btn btn-secondary" data-bs-dismiss="modal">
-                Cancelar
-              </button>
-              <button
-                type="button"
-                class="btn btn-primary"
-                id="addMemberButton"
-              >
-                Adicionar
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <footer class="mt-4">
-        © <span id="year"></span> Projeto Empreendedorismo — ISCTE · Grupo A13
-      </footer>
+<div class="container py-4">
+  <div class="page-header d-flex justify-content-between align-items-start">
+    <div>
+      <h1>Equipas</h1>
+      <p class="subtitle">Gestão de equipas e líderes de equipa</p>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <div class="text-end">
+      <button
+        class="btn btn-primary custom"
+        data-bs-toggle="modal"
+        data-bs-target="#teamModal"
+        id="openCreateTeamBtn"
+      >
+        + Nova Equipa
+      </button>
+    </div>
+  </div>
 
-    <script>
-      document.getElementById("year").textContent = new Date().getFullYear();
+  <div class="row g-4 mb-5">
+    <?php if (!empty($this->view->equipas)) { ?>
+      <?php foreach ($this->view->equipas as $equipa) { ?>
+        <?php
+          $membrosIds = [];
 
-      // Simulação DB
-      const people = [
-        { id: 1, name: "João Silva", email: "joao.silva@iscte.pt" },
-      ];
-
-      let teams = [];
-      let currentTeamIndex = null;
-
-      // ===== Helpers modais (IMPORTANTES) =====
-      function showModal(id) {
-        const el = document.getElementById(id);
-        const modal = bootstrap.Modal.getOrCreateInstance(el);
-        modal.show();
-        return modal;
-      }
-
-      function hideModal(id) {
-        const el = document.getElementById(id);
-        const modal = bootstrap.Modal.getOrCreateInstance(el);
-        modal.hide();
-      }
-
-      function forceCleanBackdrops() {
-        // remove backdrops órfãos
-        document.querySelectorAll(".modal-backdrop").forEach((b) => b.remove());
-        // remove bloqueios no body
-        document.body.classList.remove("modal-open");
-        document.body.style.removeProperty("padding-right");
-        document.body.style.removeProperty("overflow");
-      }
-
-      // sempre que um modal fecha, limpamos o que ficar preso
-      ["createTeamModal", "addMemberModal"].forEach((id) => {
-        const el = document.getElementById(id);
-        el.addEventListener("hidden.bs.modal", forceCleanBackdrops);
-      });
-
-      // -------------------------
-      //  LÓGICA DE EQUIPAS
-      // -------------------------
-      function populateLeadersSelect() {
-        const select = document.getElementById("teamLeader");
-        select.innerHTML = '<option value="">Selecione um líder</option>';
-
-        people.forEach((p) => {
-          const opt = document.createElement("option");
-          opt.value = p.id;
-          opt.textContent = p.name;
-          select.appendChild(opt);
-        });
-      }
-
-      function populateMembersSelect() {
-        const select = document.getElementById("memberSelect");
-        select.innerHTML = '<option value="">Selecione um membro</option>';
-
-        const addedIds = teams[currentTeamIndex].members.map((m) => m.id);
-
-        people.forEach((p) => {
-          if (!addedIds.includes(p.id)) {
-            const opt = document.createElement("option");
-            opt.value = p.id;
-            opt.textContent = p.name;
-            select.appendChild(opt);
+          if (!empty($equipa['membros'])) {
+            foreach ($equipa['membros'] as $membro) {
+              $membrosIds[] = $membro['trabalhador_id'];
+            }
           }
-        });
-      }
+        ?>
 
-      document
-        .getElementById("createTeamButton")
-        .addEventListener("click", () => {
-          const name = document.getElementById("teamName").value.trim();
-          const leaderId = parseInt(
-            document.getElementById("teamLeader").value,
-          );
-          const desc = document.getElementById("teamDescription").value.trim();
+        <div class="col-md-6 col-lg-4">
+          <div class="team-card">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <h3 class="team-title"><?= htmlspecialchars($equipa['nome']) ?></h3>
+              </div>
 
-          const leader = people.find((p) => p.id === leaderId);
-          if (!name) return alert("Indique o nome da equipa.");
-          if (!leader) return alert("Selecione um líder.");
-
-          teams.push({
-            name,
-            leader: leader.name,
-            leaderId,
-            description: desc,
-            members: [],
-          });
-
-          renderTeams();
-          hideModal("createTeamModal");
-          document.getElementById("teamForm").reset();
-        });
-
-      document
-        .getElementById("addMemberButton")
-        .addEventListener("click", () => {
-          const id = parseInt(document.getElementById("memberSelect").value);
-          const role = document.getElementById("memberRole").value.trim();
-
-          const person = people.find((p) => p.id === id);
-          if (!person) return alert("Selecione um membro.");
-          if (!role) return alert("Indique a função.");
-
-          teams[currentTeamIndex].members.push({
-            id: person.id,
-            name: person.name,
-            role,
-          });
-
-          renderTeams();
-          hideModal("addMemberModal");
-          document.getElementById("memberForm").reset();
-        });
-
-      function renderTeams() {
-        const grid = document.getElementById("teamsGrid");
-        grid.innerHTML = "";
-
-        teams.forEach((t, i) => {
-          grid.insertAdjacentHTML(
-            "beforeend",
-            `
-            <div class="col-md-6 col-lg-4">
-              <div class="project-card team-card">
-                <h3>${t.name}</h3>
-                <p><strong>Líder:</strong> ${t.leader}</p>
-                <p><strong>Membros:</strong> ${t.members.length}</p>
-                <p>${t.description || "Sem descrição"}</p>
-                <div>
-                  ${t.members
-                    .map(
-                      (m) =>
-                        `<div class="member-badge">${m.name} (${m.role})</div>`,
-                    )
-                    .join("")}
-                </div>
-                <button class="view-btn mt-3" data-team-index="${i}">
-                  + Adicionar Membro
+              <div class="text-end">
+                <button
+                  class="btn btn-sm btn-outline-secondary me-2 edit-team-btn"
+                  data-bs-toggle="modal"
+                  data-bs-target="#teamModal"
+                  data-id="<?= $equipa['id'] ?>"
+                  data-nome="<?= htmlspecialchars($equipa['nome']) ?>"
+                  data-especialidade="<?= htmlspecialchars($equipa['especialidade'] ?? '') ?>"
+                  data-lider-id="<?= htmlspecialchars($equipa['lider_id'] ?? '') ?>"
+                  type="button"
+                >
+                  Editar
                 </button>
+
+                <a
+                  href="/eliminar_equipa?id=<?= $equipa['id'] ?>"
+                  class="btn btn-sm btn-outline-danger"
+                  onclick="return confirm('Tem a certeza que deseja eliminar esta equipa?')"
+                >
+                  Eliminar
+                </a>
               </div>
             </div>
-          `,
-          );
-        });
 
-        // bind eventos dos botões “Adicionar Membro”
-        grid.querySelectorAll("button[data-team-index]").forEach((btn) => {
-          btn.addEventListener("click", () => {
-            const i = parseInt(btn.getAttribute("data-team-index"));
-            openAddMemberModal(i);
-          });
-        });
-      }
+            <div class="team-meta">
+              <div class="meta-row">
+                <span class="meta-label">Especialidade:</span>
+                <span class="meta-value">
+                  <?= !empty($equipa['especialidade']) ? htmlspecialchars($equipa['especialidade']) : '—' ?>
+                </span>
+              </div>
 
-      function openAddMemberModal(i) {
-        currentTeamIndex = i;
-        populateMembersSelect();
-        showModal("addMemberModal");
-      }
+              <div class="meta-row">
+                <span class="meta-label">Líder:</span>
+                <span class="meta-value">
+                  <?= !empty($equipa['lider_nome']) ? htmlspecialchars($equipa['lider_nome']) : 'Sem líder definido' ?>
+                </span>
+              </div>
 
-      // Inicialização
-      populateLeadersSelect();
-      renderTeams();
-    </script>
-  </body>
-</html>
+              <div class="meta-row">
+                <span class="meta-label">Função do líder:</span>
+                <span class="meta-value">
+                  <?= !empty($equipa['lider_funcao']) ? htmlspecialchars($equipa['lider_funcao']) : '—' ?>
+                </span>
+              </div>
+
+              <div class="meta-row">
+                <span class="meta-label">Nº de membros:</span>
+                <span class="meta-value">
+                  <?= !empty($equipa['membros']) ? count($equipa['membros']) : 0 ?>
+                </span>
+              </div>
+            </div>
+
+            <div class="mt-3">
+              <strong>Membros da equipa</strong>
+
+              <?php if (!empty($equipa['membros'])) { ?>
+                <div class="mt-2">
+                  <?php foreach ($equipa['membros'] as $membro) { ?>
+                    <div class="member-box d-flex justify-content-between align-items-center">
+                      <div>
+                        <div><strong><?= htmlspecialchars($membro['nome']) ?></strong></div>
+                        <div class="muted" style="font-size: .92rem;">
+                          <?= !empty($membro['funcao']) ? htmlspecialchars($membro['funcao']) : 'Sem função definida' ?>
+                        </div>
+                      </div>
+
+                      <a
+                        href="/remover_membro_equipa?equipa_id=<?= $equipa['id'] ?>&trabalhador_id=<?= $membro['trabalhador_id'] ?>"
+                        class="btn btn-sm btn-outline-danger"
+                        onclick="return confirm('Remover este trabalhador da equipa?')"
+                      >
+                        Remover
+                      </a>
+                    </div>
+                  <?php } ?>
+                </div>
+              <?php } else { ?>
+                <div class="muted mt-2">Ainda não existem membros nesta equipa.</div>
+              <?php } ?>
+            </div>
+
+            <div class="mt-3">
+              <form method="post" action="/adicionar_membro_equipa" class="d-flex gap-2">
+                <input type="hidden" name="equipa_id" value="<?= $equipa['id'] ?>">
+
+                <select name="trabalhador_id" class="form-control" required>
+                  <option value="">Seleciona um trabalhador</option>
+
+                  <?php
+                    $haTrabalhadoresDisponiveis = false;
+                    foreach ($this->view->trabalhadores as $trabalhador) {
+                      if (!in_array($trabalhador['id'], $membrosIds)) {
+                        $haTrabalhadoresDisponiveis = true;
+                  ?>
+                        <option value="<?= $trabalhador['id'] ?>">
+                          <?= htmlspecialchars($trabalhador['nome']) ?>
+                          <?php if (!empty($trabalhador['funcao'])) { ?>
+                            — <?= htmlspecialchars($trabalhador['funcao']) ?>
+                          <?php } ?>
+                        </option>
+                  <?php
+                      }
+                    }
+                  ?>
+                </select>
+
+                <button
+                  type="submit"
+                  class="btn btn-primary"
+                  <?= !$haTrabalhadoresDisponiveis ? 'disabled' : '' ?>
+                >
+                  Adicionar
+                </button>
+              </form>
+
+              <?php if (!$haTrabalhadoresDisponiveis) { ?>
+                <div class="muted mt-2" style="font-size: .92rem;">
+                  Todos os trabalhadores disponíveis já pertencem a esta equipa.
+                </div>
+              <?php } ?>
+            </div>
+          </div>
+        </div>
+      <?php } ?>
+    <?php } else { ?>
+      <div class="col-12">
+        <div class="alert alert-info">
+          Ainda não existem equipas registadas.
+        </div>
+      </div>
+    <?php } ?>
+  </div>
+
+  <footer>
+    © <span id="year"></span> Projeto Empreendedorismo — ISCTE ·
+    Desenvolvido pelo Grupo A13
+  </footer>
+</div>
+
+<div class="modal fade" id="teamModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="teamModalTitle">Nova Equipa</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+        ></button>
+      </div>
+
+      <div class="modal-body">
+        <form id="teamForm" method="post" action="/criar_equipa">
+          <input type="hidden" id="teamId" name="id" />
+
+          <div class="mb-3">
+            <label class="form-label" for="teamName">Nome da equipa</label>
+            <input id="teamName" name="nome" class="form-control" required />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="teamSpecialty">Especialidade</label>
+            <input id="teamSpecialty" name="especialidade" class="form-control" />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="teamLeader">Líder da equipa</label>
+            <select id="teamLeader" name="lider_id" class="form-control">
+              <option value="">Selecione um líder</option>
+              <?php foreach ($this->view->trabalhadores as $trabalhador) { ?>
+                <option value="<?= $trabalhador['id'] ?>">
+                  <?= htmlspecialchars($trabalhador['nome']) ?>
+                  <?php if (!empty($trabalhador['funcao'])) { ?>
+                    — <?= htmlspecialchars($trabalhador['funcao']) ?>
+                  <?php } ?>
+                </option>
+              <?php } ?>
+            </select>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">
+          Cancelar
+        </button>
+
+        <a
+          href="#"
+          class="btn btn-danger"
+          id="deleteTeamBtn"
+          style="display: none"
+          onclick="return confirm('Tem a certeza que deseja eliminar esta equipa?')"
+        >
+          Eliminar
+        </a>
+
+        <button class="btn btn-primary" type="submit" form="teamForm">
+          Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.getElementById("year").textContent = new Date().getFullYear();
+
+  const teamForm = document.getElementById("teamForm");
+  const teamModalTitle = document.getElementById("teamModalTitle");
+  const deleteTeamBtn = document.getElementById("deleteTeamBtn");
+  const openCreateTeamBtn = document.getElementById("openCreateTeamBtn");
+
+  openCreateTeamBtn.addEventListener("click", function () {
+    teamModalTitle.textContent = "Nova Equipa";
+    teamForm.action = "/criar_equipa";
+
+    document.getElementById("teamId").value = "";
+    document.getElementById("teamName").value = "";
+    document.getElementById("teamSpecialty").value = "";
+    document.getElementById("teamLeader").value = "";
+
+    deleteTeamBtn.style.display = "none";
+    deleteTeamBtn.href = "#";
+  });
+
+  document.querySelectorAll(".edit-team-btn").forEach((btn) => {
+    btn.addEventListener("click", function () {
+      teamModalTitle.textContent = "Editar Equipa";
+      teamForm.action = "/editar_equipa";
+
+      document.getElementById("teamId").value = this.dataset.id || "";
+      document.getElementById("teamName").value = this.dataset.nome || "";
+      document.getElementById("teamSpecialty").value = this.dataset.especialidade || "";
+      document.getElementById("teamLeader").value = this.dataset.liderId || "";
+
+      deleteTeamBtn.style.display = "inline-block";
+      deleteTeamBtn.href = "/eliminar_equipa?id=" + (this.dataset.id || "");
+    });
+  });
+</script>
