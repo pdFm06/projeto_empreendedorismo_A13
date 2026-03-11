@@ -1,66 +1,135 @@
-<!DOCTYPE html>
-<html lang="pt">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Painel Geral</title>
+<style>
+  .dashboard-card {
+    background: #fff;
+    border-radius: 18px;
+    padding: 1.25rem;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+    height: 100%;
+  }
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet"/>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
-    <link rel="stylesheet" href="style.css" />
-  </head>
+  .dashboard-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 0.5rem;
+  }
 
-  <body>
-    <div class="container py-4">
-      <div class="page-header">
-        <h1>Painel Geral</h1>
-        <p class="subtitle">Visão geral dos indicadores</p>
-      </div>
+  .dashboard-number {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.1;
+  }
 
-      <div class="row g-4 align-items-stretch">
-        <div class="col-12 col-md-6 col-lg">
-          <div class="project-card">
-            <div class="project-title">Projetos ativos</div>
-            <div class="dashboard-number">#</div>
-          </div>
-        </div>
+  .dashboard-subtext {
+    margin-top: 0.4rem;
+    font-size: 0.92rem;
+    color: #64748b;
+  }
 
-        <div class="col-12 col-md-6 col-lg">
-          <div class="project-card">
-            <div class="project-title">Média de progresso</div>
-            <div class="dashboard-number">#</div>
-          </div>
-        </div>
+  footer {
+    color: #6b7280;
+    font-size: 0.9rem;
+    text-align: center;
+    margin-top: 2rem;
+  }
+</style>
 
-        <div class="col-12 col-md-6 col-lg">
-          <div class="project-card">
-            <div class="project-title">Projetos em risco</div>
-            <div class="dashboard-number">#</div>
-          </div>
-        </div>
+<div class="container py-4">
+  <div class="page-header">
+    <h1>Painel Geral</h1>
+    <p class="subtitle">Visão geral dos indicadores</p>
+  </div>
 
-        <div class="col-12 col-md-6 col-lg">
-          <div class="project-card">
-            <div class="project-title">Incidentes recentes</div>
-            <div class="dashboard-number">#</div>
-          </div>
-        </div>
-
-        <div class="col-12 col-md-6 col-lg">
-          <div class="project-card">
-            <div class="project-title">Orçamento usado</div>
-            <div class="dashboard-number">#</div>
-          </div>
+  <div class="row g-4 align-items-stretch">
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="dashboard-card">
+        <div class="dashboard-title">Total de projetos</div>
+        <div class="dashboard-number"><?= $this->view->dashboard['total_projetos'] ?></div>
+        <div class="dashboard-subtext">
+          Em execução: <?= $this->view->dashboard['projetos_em_execucao'] ?>
         </div>
       </div>
-
-      <footer class="mt-4">
-        © <span id="year"></span> Projeto Empreendedorismo — ISCTE · Grupo A13
-      </footer>
     </div>
 
-    <script>
-      document.getElementById("year").textContent = new Date().getFullYear();
-    </script>
-  </body>
-</html>
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="dashboard-card">
+        <div class="dashboard-title">Projetos concluídos</div>
+        <div class="dashboard-number"><?= $this->view->dashboard['projetos_concluidos'] ?></div>
+        <div class="dashboard-subtext">
+          Total registado na aplicação
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="dashboard-card">
+        <div class="dashboard-title">Equipas</div>
+        <div class="dashboard-number"><?= $this->view->dashboard['total_equipas'] ?></div>
+        <div class="dashboard-subtext">
+          Equipas disponíveis
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="dashboard-card">
+        <div class="dashboard-title">Trabalhadores</div>
+        <div class="dashboard-number"><?= $this->view->dashboard['total_trabalhadores'] ?></div>
+        <div class="dashboard-subtext">
+          Ativos: <?= $this->view->dashboard['trabalhadores_ativos'] ?>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="dashboard-card">
+        <div class="dashboard-title">Recursos</div>
+        <div class="dashboard-number"><?= $this->view->dashboard['total_recursos'] ?></div>
+        <div class="dashboard-subtext">
+          Total de tipos de recurso registados
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="dashboard-card">
+        <div class="dashboard-title">Recursos com baixo stock</div>
+        <div class="dashboard-number"><?= $this->view->dashboard['recursos_baixo_stock'] ?></div>
+        <div class="dashboard-subtext">
+          Quantidade entre 1 e 10
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="dashboard-card">
+        <div class="dashboard-title">Recursos esgotados</div>
+        <div class="dashboard-number"><?= $this->view->dashboard['recursos_esgotados'] ?></div>
+        <div class="dashboard-subtext">
+          Quantidade igual a 0
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="dashboard-card">
+        <div class="dashboard-title">Orçamento total dos projetos</div>
+        <div class="dashboard-number">
+          <?= number_format((float)$this->view->dashboard['orcamento_total'], 2, ',', '.') ?> €
+        </div>
+        <div class="dashboard-subtext">
+          Soma do orçamento de todos os projetos registados
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="mt-4">
+    © <span id="year"></span> Projeto Empreendedorismo — ISCTE · Grupo A13
+  </footer>
+</div>
+
+<script>
+  document.getElementById("year").textContent = new Date().getFullYear();
+</script>

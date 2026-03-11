@@ -9,7 +9,74 @@ use MF\Model\Container;
 
 class MainappController extends Action {
 
-    public function dashboard() { 
+    # Dashboard
+
+    public function dashboard()
+    {
+        $projeto = Container::getModel('Projeto');
+        $trabalhador = Container::getModel('Trabalhador');
+        $equipa = Container::getModel('Equipa');
+        $recurso = Container::getModel('Recurso');
+
+        $projetos = $projeto->listar();
+        $trabalhadores = $trabalhador->listar();
+        $equipas = $equipa->listar();
+        $recursos = $recurso->listar();
+
+        $totalProjetos = count($projetos);
+        $projetosEmExecucao = 0;
+        $projetosConcluidos = 0;
+        $orcamentoTotal = 0;
+
+        foreach ($projetos as $p) {
+            if (($p['estado'] ?? '') === 'em_execucao') {
+                $projetosEmExecucao++;
+            }
+
+            if (($p['estado'] ?? '') === 'concluido') {
+                $projetosConcluidos++;
+            }
+
+            $orcamentoTotal += (float)($p['orcamento'] ?? 0);
+        }
+
+        $totalTrabalhadores = count($trabalhadores);
+        $trabalhadoresAtivos = 0;
+
+        foreach ($trabalhadores as $t) {
+            if (($t['estado'] ?? '') === 'ativo') {
+                $trabalhadoresAtivos++;
+            }
+        }
+
+        $totalEquipas = count($equipas);
+
+        $totalRecursos = count($recursos);
+        $recursosBaixoStock = 0;
+        $recursosEsgotados = 0;
+
+        foreach ($recursos as $r) {
+            $quantidade = (int)($r['quantidade'] ?? 0);
+
+            if ($quantidade === 0) {
+                $recursosEsgotados++;
+            } elseif ($quantidade <= 10) {
+                $recursosBaixoStock++;
+            }
+        }
+
+        $this->view->dashboard = [
+            'total_projetos' => $totalProjetos,
+            'projetos_em_execucao' => $projetosEmExecucao,
+            'projetos_concluidos' => $projetosConcluidos,
+            'orcamento_total' => $orcamentoTotal,
+            'total_trabalhadores' => $totalTrabalhadores,
+            'trabalhadores_ativos' => $trabalhadoresAtivos,
+            'total_equipas' => $totalEquipas,
+            'total_recursos' => $totalRecursos,
+            'recursos_baixo_stock' => $recursosBaixoStock,
+            'recursos_esgotados' => $recursosEsgotados
+        ];
 
         $this->render('dashboard', 'layout_dashboard');
     }
@@ -130,9 +197,85 @@ class MainappController extends Action {
         exit;
     }
 
-    public function recursos() {
+    # Recursos
+
+    public function recursos()
+    {
+        $recurso = Container::getModel('Recurso');
+
+        $this->view->recursos = $recurso->listar();
 
         $this->render('recursos', 'layout_dashboard');
+    }
+
+    public function criarRecurso()
+    {
+        $recurso = Container::getModel('Recurso');
+
+        $recurso->__set('nome', $_POST['nome'] ?? '');
+        $recurso->__set('tipo', $_POST['tipo'] ?? 'material');
+        $recurso->__set('quantidade', $_POST['quantidade'] ?? 0);
+        $recurso->__set('custo_unitario', $_POST['custo_unitario'] ?? 0);
+        $recurso->__set('estado', $_POST['estado'] ?? 'disponivel');
+
+        $recurso->criar();
+
+        header('Location: /recursos');
+        exit;
+    }
+
+    public function editarRecurso()
+    {
+        $id = $_POST['id'] ?? null;
+
+        if (!$id) {
+            header('Location: /recursos');
+            exit;
+        }
+
+        $recurso = Container::getModel('Recurso');
+
+        $recurso->__set('id', $id);
+        $recurso->__set('nome', $_POST['nome'] ?? '');
+        $recurso->__set('tipo', $_POST['tipo'] ?? 'material');
+        $recurso->__set('quantidade', $_POST['quantidade'] ?? 0);
+        $recurso->__set('custo_unitario', $_POST['custo_unitario'] ?? 0);
+        $recurso->__set('estado', $_POST['estado'] ?? 'disponivel');
+
+        $recurso->editar();
+
+        header('Location: /recursos');
+        exit;
+    }
+
+    public function eliminarRecurso()
+    {
+        $id = $_GET['id'] ?? null;
+
+        if ($id) {
+            $recurso = Container::getModel('Recurso');
+            $recurso->eliminar($id);
+        }
+
+        header('Location: /recursos');
+        exit;
+    }
+
+    public function atualizarQuantidadeRecurso()
+    {
+        $id = $_POST['id'] ?? null;
+        $quantidade = $_POST['quantidade'] ?? null;
+
+        if ($id === null || $quantidade === null) {
+            header('Location: /recursos');
+            exit;
+        }
+
+        $recurso = Container::getModel('Recurso');
+        $recurso->atualizarQuantidade($id, max(0, (int)$quantidade));
+
+        header('Location: /recursos');
+        exit;
     }
 
     # Trabalhadores

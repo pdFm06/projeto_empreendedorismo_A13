@@ -133,10 +133,36 @@ class Route extends Bootstrap {
             'action' => 'removerMembroEquipa'
         );
 
+        # Recursos
+
         $routes['recursos'] = array(
             'route' => '/recursos',
             'controller' => 'mainappController',
             'action' => 'recursos'
+        );
+
+        $routes['criar_recurso'] = array(
+            'route' => '/criar_recurso',
+            'controller' => 'mainappController',
+            'action' => 'criarRecurso'
+        );
+
+        $routes['editar_recurso'] = array(
+            'route' => '/editar_recurso',
+            'controller' => 'mainappController',
+            'action' => 'editarRecurso'
+        );
+
+        $routes['eliminar_recurso'] = array(
+            'route' => '/eliminar_recurso',
+            'controller' => 'mainappController',
+            'action' => 'eliminarRecurso'
+        );
+
+        $routes['atualizar_quantidade_recurso'] = array(
+            'route' => '/atualizar_quantidade_recurso',
+            'controller' => 'mainappController',
+            'action' => 'atualizarQuantidadeRecurso'
         );
         
 
