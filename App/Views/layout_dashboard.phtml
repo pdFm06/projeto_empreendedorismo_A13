@@ -1,3 +1,10 @@
+<?php
+$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+function isActive($paths, $uri) {
+    return in_array($uri, (array)$paths) ? 'active' : '';
+}
+?>
 <!DOCTYPE html>
 <html lang="pt">
 <head>
@@ -28,25 +35,37 @@
       border-right: 1px solid rgba(0,0,0,.05);
     }
 
-    .sidebar .nav-link {
+    .sidebar .nav-link,
+    .offcanvas .nav-link {
       color: #444;
       padding: .6rem .75rem;
       border-radius: .375rem;
+      transition: all 0.2s ease;
+      font-weight: 500;
     }
 
-    .sidebar .nav-link:hover {
+    .sidebar .nav-link:hover,
+    .offcanvas .nav-link:hover {
       background: rgba(13,110,253,0.06);
       color: var(--accent);
+      transform: translateX(2px);
     }
 
-    .sidebar .nav-link.active {
+    .sidebar .nav-link.active,
+    .offcanvas .nav-link.active {
       background: rgba(13,110,253,0.12);
       color: var(--accent);
+      font-weight: 700;
     }
 
     .content-area {
       min-width: 0;
       width: 100%;
+      background: #f8f9fa;
+    }
+
+    .alert {
+      border-radius: 12px;
     }
 
     @media (max-width: 767.98px) {
@@ -69,22 +88,22 @@
     <aside class="sidebar d-none d-md-block p-3 bg-white border-end shadow-sm flex-shrink-0">
       <ul class="nav nav-pills flex-column mb-auto">
         <li class="nav-item mb-1">
-          <a href="/dashboard" class="nav-link active">Dashboard</a>
+          <a href="/dashboard" class="nav-link <?= isActive(['/dashboard'], $uri) ?>">Dashboard</a>
         </li>
         <li class="nav-item mb-1">
-          <a href="/trabalhadores" class="nav-link">Trabalhadores</a>
+          <a href="/trabalhadores" class="nav-link <?= isActive(['/trabalhadores'], $uri) ?>">Trabalhadores</a>
         </li>
         <li class="nav-item mb-1">
-          <a href="/equipas" class="nav-link">Equipas</a>
+          <a href="/equipas" class="nav-link <?= isActive(['/equipas'], $uri) ?>">Equipas</a>
         </li>
         <li class="nav-item mb-1">
-          <a href="/projetos" class="nav-link">Projetos</a>
+          <a href="/projetos" class="nav-link <?= isActive(['/projetos'], $uri) ?>">Projetos</a>
         </li>
         <li class="nav-item mb-1">
-          <a href="/recursos" class="nav-link">Recursos</a>
+          <a href="/recursos" class="nav-link <?= isActive(['/recursos'], $uri) ?>">Recursos</a>
         </li>
         <li class="nav-item">
-          <a href="#settings" class="nav-link">Definições</a>
+          <a href="#settings" class="nav-link <?= isActive(['/definicoes'], $uri) ?>">Definições</a>
         </li>
       </ul>
     </aside>
@@ -99,12 +118,24 @@
         </div>
         <div class="offcanvas-body">
           <ul class="nav nav-pills flex-column">
-            <li class="nav-item mb-1"><a href="/dashboard" class="nav-link">Dashboard</a></li>
-            <li class="nav-item mb-1"><a href="/trabalhadores" class="nav-link">Trabalhadores</a></li>
-            <li class="nav-item mb-1"><a href="/equipas" class="nav-link">Equipas</a></li>
-            <li class="nav-item mb-1"><a href="/projetos" class="nav-link">Projetos</a></li>
-            <li class="nav-item mb-1"><a href="/recursos" class="nav-link">Recursos</a></li>
-            <li class="nav-item mt-3"><a href="#settings" class="nav-link">Definições</a></li>
+            <li class="nav-item mb-1">
+              <a href="/dashboard" class="nav-link <?= isActive(['/dashboard'], $uri) ?>">Dashboard</a>
+            </li>
+            <li class="nav-item mb-1">
+              <a href="/trabalhadores" class="nav-link <?= isActive(['/trabalhadores'], $uri) ?>">Trabalhadores</a>
+            </li>
+            <li class="nav-item mb-1">
+              <a href="/equipas" class="nav-link <?= isActive(['/equipas'], $uri) ?>">Equipas</a>
+            </li>
+            <li class="nav-item mb-1">
+              <a href="/projetos" class="nav-link <?= isActive(['/projetos'], $uri) ?>">Projetos</a>
+            </li>
+            <li class="nav-item mb-1">
+              <a href="/recursos" class="nav-link <?= isActive(['/recursos'], $uri) ?>">Recursos</a>
+            </li>
+            <li class="nav-item mt-3">
+              <a href="#settings" class="nav-link <?= isActive(['/definicoes'], $uri) ?>">Definições</a>
+            </li>
           </ul>
         </div>
       </div>
