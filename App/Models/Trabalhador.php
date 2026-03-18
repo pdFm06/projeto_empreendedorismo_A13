@@ -113,4 +113,32 @@ class Trabalhador extends Model
 
         return $stmt->execute();
     }
+
+    public function listarPorGestor($gestorId)
+    {
+        $query = "
+            SELECT DISTINCT
+                tr.id,
+                tr.nome,
+                tr.email,
+                tr.telefone,
+                tr.funcao,
+                tr.salario_dia,
+                tr.estado,
+                tr.criado_em
+            FROM trabalhadores tr
+            INNER JOIN equipa_trabalhador et ON et.trabalhador_id = tr.id
+            INNER JOIN equipas e ON e.id = et.equipa_id
+            INNER JOIN projeto_equipa pe ON pe.equipa_id = e.id
+            INNER JOIN projetos p ON p.id = pe.projeto_id
+            WHERE p.gestor_id = :gestor_id
+            ORDER BY tr.id DESC
+        ";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':gestor_id', $gestorId);
+        $stmt->execute();
+
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
 }

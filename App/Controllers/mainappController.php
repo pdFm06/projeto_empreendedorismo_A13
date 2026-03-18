@@ -14,15 +14,18 @@ class MainappController extends Action {
 
     public function dashboard()
     {
-
         $this->validarAutenticacao();
-        
+
         $projeto = Container::getModel('Projeto');
         $trabalhador = Container::getModel('Trabalhador');
         $equipa = Container::getModel('Equipa');
         $recurso = Container::getModel('Recurso');
 
-        $projetos = $projeto->listar();
+        // Projetos apenas do utilizador autenticado
+        $projetos = $projeto->listarPorGestor($_SESSION['id']);
+
+        // Mantive estes globais por agora.
+        // Se quiseres, depois também os podemos filtrar por contexto do utilizador.
         $trabalhadores = $trabalhador->listar();
         $equipas = $equipa->listar();
         $recursos = $recurso->listar();
@@ -87,21 +90,21 @@ class MainappController extends Action {
 
     # Equipas
 
-    public function equipas()
+   public function equipas()
     {
         $this->validarAutenticacao();
 
         $equipa = Container::getModel('Equipa');
         $trabalhador = Container::getModel('Trabalhador');
 
-        $equipas = $equipa->listar();
+        $equipas = $equipa->listarPorGestor($_SESSION['id']);
 
         foreach ($equipas as &$eq) {
             $eq['membros'] = $equipa->listarMembros($eq['id']);
         }
 
         $this->view->equipas = $equipas;
-        $this->view->trabalhadores = $trabalhador->listar();
+        $this->view->trabalhadores = $trabalhador->listarPorGestor($_SESSION['id']);
 
         $this->render('equipas', 'layout_dashboard');
     }
@@ -312,7 +315,7 @@ class MainappController extends Action {
 
         $trabalhador = Container::getModel('Trabalhador');
 
-        $this->view->trabalhadores = $trabalhador->listar();
+        $this->view->trabalhadores = $trabalhador->listarPorGestor($_SESSION['id']);
 
         $this->render('trabalhadores', 'layout_dashboard');
     }
@@ -382,14 +385,14 @@ class MainappController extends Action {
 
     public function projetos()
     {
-        $this->validarAutenticacao(); 
+        $this->validarAutenticacao();
 
         $projeto = Container::getModel('Projeto');
         $utilizador = Container::getModel('Utilizador');
         $equipa = Container::getModel('Equipa');
         $recurso = Container::getModel('Recurso');
 
-        $projetos = $projeto->listar();
+        $projetos = $projeto->listarPorGestor($_SESSION['id']);
 
         foreach ($projetos as &$p) {
             $p['equipas'] = $projeto->listarEquipas($p['id']);
@@ -441,26 +444,23 @@ class MainappController extends Action {
     {
         $this->validarAutenticacao();
 
-        session_start();
-
         $id = $_POST['id'] ?? null;
 
         if (!$id) {
-            Flash::set('warning', 'Projeto inválido.');
-            header('Location: /projetos');
-            exit;
-        }
-
-        if (empty(trim($_POST['nome'] ?? ''))) {
-            Flash::set('warning', 'O nome do projeto é obrigatório.');
             header('Location: /projetos');
             exit;
         }
 
         $projeto = Container::getModel('Projeto');
+        $projetoExistente = $projeto->obterPorId($id);
+
+        if (!$projetoExistente || (int)$projetoExistente['gestor_id'] !== (int)$_SESSION['id']) {
+            header('Location: /projetos');
+            exit;
+        }
 
         $projeto->__set('id', $id);
-        $projeto->__set('gestor_id', $_POST['gestor_id'] ?? null);
+        $projeto->__set('gestor_id', $_POST['gestor_id'] ?? $_SESSION['id']);
         $projeto->__set('nome', $_POST['nome'] ?? '');
         $projeto->__set('descricao', $_POST['descricao'] ?? '');
         $projeto->__set('localizacao', $_POST['localizacao'] ?? '');
@@ -469,11 +469,7 @@ class MainappController extends Action {
         $projeto->__set('estado', $_POST['estado'] ?? 'planeado');
         $projeto->__set('orcamento', $_POST['orcamento'] ?? 0);
 
-        if ($projeto->editar()) {
-            Flash::set('success', 'Projeto atualizado com sucesso.');
-        } else {
-            Flash::set('danger', 'Não foi possível atualizar o projeto.');
-        }
+        $projeto->editar();
 
         header('Location: /projetos');
         exit;
@@ -484,23 +480,22 @@ class MainappController extends Action {
     {
         $this->validarAutenticacao();
 
-        session_start();
-
         $id = $_GET['id'] ?? null;
 
         if (!$id) {
-            Flash::set('warning', 'Projeto inválido.');
             header('Location: /projetos');
             exit;
         }
 
         $projeto = Container::getModel('Projeto');
+        $projetoExistente = $projeto->obterPorId($id);
 
-        if ($projeto->eliminar($id)) {
-            Flash::set('success', 'Projeto eliminado com sucesso.');
-        } else {
-            Flash::set('danger', 'Não foi possível eliminar o projeto.');
+        if (!$projetoExistente || (int)$projetoExistente['gestor_id'] !== (int)$_SESSION['id']) {
+            header('Location: /projetos');
+            exit;
         }
+
+        $projeto->eliminar($id);
 
         header('Location: /projetos');
         exit;

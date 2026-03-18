@@ -148,4 +148,30 @@ class Equipa extends Model
 
         return $stmt->execute();
     }
+
+    public function listarPorGestor($gestorId)
+    {
+        $query = "
+            SELECT DISTINCT
+                e.id,
+                e.nome,
+                e.especialidade,
+                e.lider_id,
+                t.nome AS lider_nome,
+                t.funcao AS lider_funcao,
+                e.criado_em
+            FROM equipas e
+            INNER JOIN projeto_equipa pe ON pe.equipa_id = e.id
+            INNER JOIN projetos p ON p.id = pe.projeto_id
+            LEFT JOIN trabalhadores t ON t.id = e.lider_id
+            WHERE p.gestor_id = :gestor_id
+            ORDER BY e.id DESC
+        ";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':gestor_id', $gestorId);
+        $stmt->execute();
+
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
 }

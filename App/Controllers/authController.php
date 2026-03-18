@@ -17,6 +17,7 @@ class AuthController extends Action
             exit;
         }
 
+        $this->view->erro = $this->view->erro ?? '';
         $this->render('login', 'layout1');
     }
 
@@ -28,19 +29,14 @@ class AuthController extends Action
             exit;
         }
 
+        $this->view->erro = $this->view->erro ?? '';
         $this->render('registar', 'layout1');
     }
 
     public function autenticar()
     {
         $email = trim($_POST['email'] ?? '');
-        $password = $_POST['password'] ?? '';
-
-        if ($email === '' || $password === '') {
-            Flash::set('warning', 'Preencha o e-mail e a palavra-passe.');
-            header('Location: /login');
-            exit;
-        }
+        $password = trim($_POST['password'] ?? '');
 
         $utilizador = Container::getModel('Utilizador');
         $utilizador->__set('email', $email);
@@ -48,18 +44,15 @@ class AuthController extends Action
 
         if ($user && password_verify($password, trim($user['password']))) {
             session_regenerate_id(true);
-
             $_SESSION['id'] = $user['id'];
             $_SESSION['email'] = $user['email'];
 
-            Flash::set('success', 'Sessão iniciada com sucesso.');
             header('Location: /dashboard');
             exit;
         }
 
-        Flash::set('danger', 'E-mail ou palavra-passe incorretos.');
-        header('Location: /login');
-        exit;
+        $this->view->erro = 'E-mail ou palavra-passe incorretos.';
+        $this->render('login', 'layout1');
     }
 
     public function logout()

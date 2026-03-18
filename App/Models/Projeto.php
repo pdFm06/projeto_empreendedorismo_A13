@@ -186,4 +186,32 @@ class Projeto extends Model
 
         return $stmt->execute();
     }
+
+    public function listarPorGestor($gestorId)
+    {
+        $query = "
+            SELECT 
+                p.id,
+                p.nome,
+                p.descricao,
+                p.localizacao,
+                p.data_inicio,
+                p.data_fim_prevista,
+                p.data_fim_real,
+                p.estado,
+                p.orcamento,
+                p.gestor_id,
+                u.email AS gestor_nome
+            FROM projetos p
+            INNER JOIN utilizadores u ON u.id = p.gestor_id
+            WHERE p.gestor_id = :gestor_id
+            ORDER BY p.id DESC
+        ";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':gestor_id', $gestorId);
+        $stmt->execute();
+
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
 }
