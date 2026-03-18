@@ -5,21 +5,84 @@ namespace App\Controllers;
 use MF\Controller\Action;
 use MF\Model\Container;
 use App\Lib\Email;
+use App\Lib\Flash;
 
 class AuthController extends Action
 {
     # Página de login
     public function login()
     {
-        $this->view->erro = $this->view->erro ?? '';
+        if (isset($_SESSION['id'])) {
+            header('Location: /dashboard');
+            exit;
+        }
+
         $this->render('login', 'layout1');
     }
 
     # Página de registo
     public function registar()
     {
-        $this->view->erro = $this->view->erro ?? '';
+        if (isset($_SESSION['id'])) {
+            header('Location: /dashboard');
+            exit;
+        }
+
         $this->render('registar', 'layout1');
+    }
+
+    public function autenticar()
+    {
+        $email = trim($_POST['email'] ?? '');
+        $password = $_POST['password'] ?? '';
+
+        if ($email === '' || $password === '') {
+            Flash::set('warning', 'Preencha o e-mail e a palavra-passe.');
+            header('Location: /login');
+            exit;
+        }
+
+        $utilizador = Container::getModel('Utilizador');
+        $utilizador->__set('email', $email);
+        $user = $utilizador->obterPorEmail();
+
+        if ($user && password_verify($password, trim($user['password']))) {
+            session_regenerate_id(true);
+
+            $_SESSION['id'] = $user['id'];
+            $_SESSION['email'] = $user['email'];
+
+            Flash::set('success', 'Sessão iniciada com sucesso.');
+            header('Location: /dashboard');
+            exit;
+        }
+
+        Flash::set('danger', 'E-mail ou palavra-passe incorretos.');
+        header('Location: /login');
+        exit;
+    }
+
+    public function logout()
+    {
+        $_SESSION = [];
+
+        if (ini_get('session.use_cookies')) {
+            $params = session_get_cookie_params();
+            setcookie(
+                session_name(),
+                '',
+                time() - 42000,
+                $params['path'],
+                $params['domain'],
+                $params['secure'],
+                $params['httponly']
+            );
+        }
+
+        session_destroy();
+
+        header('Location: /login');
+        exit;
     }
 
     # Página de pedir recuperação da password
@@ -32,26 +95,22 @@ class AuthController extends Action
     # Enviar token por email (recuperação)
     public function enviarToken()
     {
-
         $email = trim($_POST['email'] ?? '');
+
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            Flash::set('warning', 'Introduza um e-mail válido.');
+            header('Location: /trocar_palavra_passe');
+            exit;
+        }
+
         $utilizador = Container::getModel('Utilizador');
         $utilizador->__set('email', $email);
-
         $user = $utilizador->obterPorEmail();
 
-        #$this->view->mensagem = 'Se o e-mail estiver registado, irá receber um código.';
-
         if ($user) {
-            // Gerar token aleatório de 6 dígitos
-            
-            #print_r ($user);
-
             $token = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-
-            // Guardar token e expiração
             $utilizador->definirTokenRecuperacao($token);
 
-            // Montar email HTML
             $mensagemHtml = "
                 <h2>Recuperação de Palavra-Passe</h2>
                 <p>Recebemos um pedido de recuperação de palavra-passe.</p>
@@ -61,42 +120,34 @@ class AuthController extends Action
                 <p>Se não fez este pedido, ignore este e-mail.</p>
             ";
 
-            // Enviar email com PHPMailer
             Email::enviar($email, 'Código de recuperação de conta', $mensagemHtml);
-
-            session_start(); #1
-            $_SESSION['reset_email'] = $email; #1
-            $this->render('codigo', 'layout1');
-        } else {
-            $this->view->mensagem = 'Email inválido';
-            $this->render('forgotpassword', 'layout1');
+            $_SESSION['reset_email'] = $email;
         }
 
+        Flash::set('info', 'Se o e-mail estiver registado, irá receber um código.');
+        header('Location: /mostrar_codigo');
+        exit;
     }
 
     # Reenviar token se o utilizador não recebeu
     public function reenviarToken()
     {
-
-        #$this->trocarPalavraPasse(); #1
-        session_start();
-
         $email = $_SESSION['reset_email'] ?? null;
 
         if (!$email) {
-            $this->view->mensagem = 'Volte a introduzir o e-mail para receber um novo código.';
-            $this->render('forgotpassword', 'layout1');
-            return;
+            Flash::set('warning', 'Volte a introduzir o e-mail para receber um novo código.');
+            header('Location: /trocar_palavra_passe');
+            exit;
         }
 
         $utilizador = Container::getModel('Utilizador');
         $utilizador->__set('email', $email);
-
         $user = $utilizador->obterPorEmail();
+
         if (!$user) {
-            $this->view->mensagem = 'Volte a introduzir o e-mail.';
-            $this->render('forgotpassword', 'layout1');
-            return;
+            Flash::set('warning', 'Volte a introduzir o e-mail.');
+            header('Location: /trocar_palavra_passe');
+            exit;
         }
 
         $token = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
@@ -111,66 +162,58 @@ class AuthController extends Action
 
         Email::enviar($email, 'Novo código de recuperação', $mensagemHtml);
 
-        $this->view->mensagem = 'Código reenviado. Verifique o seu e-mail.';
-        $this->render('codigo', 'layout1');
-
+        Flash::set('success', 'Código reenviado. Verifique o seu e-mail.');
+        header('Location: /mostrar_codigo');
+        exit;
     }
 
     # Validar token e redefinir password
     public function redefinirPassword()
     {
-
-        #$this->render('novapass', 'layout1'); #1
-        session_start();
-
         $token = trim($_POST['token'] ?? '');
 
         if ($token === '') {
-            $this->view->mensagem = 'Introduza o código.';
-            $this->render('codigo', 'layout1');
-            return;
+            Flash::set('warning', 'Introduza o código.');
+            header('Location: /mostrar_codigo');
+            exit;
         }
 
         $utilizador = Container::getModel('Utilizador');
         $user = $utilizador->obterPorToken($token);
 
         if (!$user) {
-            $this->view->mensagem = 'Código inválido ou expirado.';
-            $this->render('codigo', 'layout1');
-            return;
+            Flash::set('danger', 'Código inválido ou expirado.');
+            header('Location: /mostrar_codigo');
+            exit;
         }
 
-        // Token válido -> guardar utilizador na sessão
         $_SESSION['reset_user_id'] = (int)$user['id'];
 
         $this->render('novapass', 'layout1');
-        
     }
 
-    public function enviarNovaPalavraPasse() {
-        session_start();
-
+    public function enviarNovaPalavraPasse()
+    {
         $novaPwd = $_POST['password'] ?? '';
-
         $resetUserId = $_SESSION['reset_user_id'] ?? null;
+
         if (!$resetUserId) {
-            $this->view->mensagem = 'Sessão expirada. Volte a pedir recuperação.';
-            $this->render('forgotpassword', 'layout1');
-            return;
+            Flash::set('warning', 'Sessão expirada. Volte a pedir recuperação.');
+            header('Location: /trocar_palavra_passe');
+            exit;
         }
 
-        // Validar força da password (reutiliza a tua função)
         if (preg_match('/\s/', $novaPwd)) {
-            $this->view->mensagem = 'A palavra-passe não pode conter espaços.';
-            $this->render('novapass', 'layout1');
-            return;
+            Flash::set('warning', 'A palavra-passe não pode conter espaços.');
+            header('Location: /redefinirPassword');
+            exit;
         }
 
         $erroPwd = $this->validarPassword($novaPwd);
         if ($erroPwd) {
-            $this->view->mensagem = $erroPwd;
-            $this->render('novapass', 'layout1');
-            return;
+            Flash::set('warning', $erroPwd);
+            header('Location: /redefinirPassword');
+            exit;
         }
 
         $novaHash = password_hash($novaPwd, PASSWORD_DEFAULT);
@@ -178,12 +221,11 @@ class AuthController extends Action
         $utilizador = Container::getModel('Utilizador');
         $utilizador->atualizarPasswordPorId((int)$resetUserId, $novaHash);
 
-        // limpar sessão de reset
         unset($_SESSION['reset_user_id'], $_SESSION['reset_email']);
 
-        $this->view->mensagem = 'Palavra-passe atualizada com sucesso.';
-        $this->render('login', 'layout1');
-
+        Flash::set('success', 'Palavra-passe atualizada com sucesso.');
+        header('Location: /login');
+        exit;
     }
 
     # Página de inserir o código recebido
@@ -200,49 +242,59 @@ class AuthController extends Action
         $password = $_POST['password'] ?? '';
         $password2 = $_POST['password2'] ?? '';
 
-        // Evitar espaços nas passwords
+        if ($email === '') {
+            Flash::set('warning', 'O e-mail é obrigatório.');
+            header('Location: /registar');
+            exit;
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            Flash::set('warning', 'Introduza um e-mail válido.');
+            header('Location: /registar');
+            exit;
+        }
+
         if (preg_match('/\s/', $password)) {
-            $this->view->erro = 'A palavra-passe não pode conter espaços.';
-            $this->render('registar', 'layout1');
-            return;
+            Flash::set('warning', 'A palavra-passe não pode conter espaços.');
+            header('Location: /registar');
+            exit;
         }
 
-        // Confirmar se coincidem
         if ($password !== $password2) {
-            $this->view->erro = 'As palavras-passe não coincidem.';
-            $this->render('registar', 'layout1');
-            return;
+            Flash::set('warning', 'As palavras-passe não coincidem.');
+            header('Location: /registar');
+            exit;
         }
 
-        // Validar força da password
         $erroPwd = $this->validarPassword($password);
         if ($erroPwd) {
-            $this->view->erro = $erroPwd;
-            $this->render('registar', 'layout1');
-            return;
+            Flash::set('warning', $erroPwd);
+            header('Location: /registar');
+            exit;
         }
 
-        // Verificar se já existe
         $utilizador = Container::getModel('Utilizador');
         $utilizador->__set('email', $email);
+
         if ($utilizador->utilizadorExiste()) {
-            $this->view->erro = 'Este e-mail já está registado.';
-            $this->render('registar', 'layout1');
-            return;
+            Flash::set('warning', 'Este e-mail já está registado.');
+            header('Location: /registar');
+            exit;
         }
 
-        // Criar utilizador
         $passwordHash = password_hash($password, PASSWORD_DEFAULT);
         $utilizador->__set('password', $passwordHash);
         $utilizador->__set('password2', $passwordHash);
 
         if ($utilizador->registar()) {
+            Flash::set('success', 'Conta criada com sucesso. Já pode iniciar sessão.');
             header('Location: /login');
             exit;
-        } else {
-            $this->view->erro = 'Erro ao criar conta.';
-            $this->render('registar', 'layout1');
         }
+
+        Flash::set('danger', 'Erro ao criar conta.');
+        header('Location: /registar');
+        exit;
     }
 
     # Validação de força da password
@@ -266,37 +318,6 @@ class AuthController extends Action
         return null;
     }
 
-    # Autenticar utilizador
-    public function autenticar()
-    {
-        $email = trim($_POST['email'] ?? '');
-        $password = trim($_POST['password'] ?? '');
-
-        $utilizador = Container::getModel('Utilizador');
-        $utilizador->__set('email', $email);
-        $user = $utilizador->obterPorEmail();
-
-        if ($user && password_verify($password, trim($user['password']))) {
-            session_start();
-            $_SESSION['id'] = $user['id'];
-            $_SESSION['email'] = $user['email'];
-
-            header('Location: /dashboard');
-            exit;
-        } else {
-            $this->view->erro = 'E-mail ou palavra-passe incorretos.';
-            $this->render('login', 'layout1');
-        }
-    }
-
-    # Terminar sessão
-    public function logout()
-    {
-        session_start();
-        session_destroy();
-        header('Location: /login');
-        exit;
-    }
 
     public function teste()
     {

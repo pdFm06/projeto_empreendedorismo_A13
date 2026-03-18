@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Lib;
 
 use PHPMailer\PHPMailer\PHPMailer;
@@ -8,32 +9,35 @@ class Email
 {
     public static function enviar($destinatario, $assunto, $mensagemHtml)
     {
+        $configPath = __DIR__ . '/../Config/mail.php';
+
+        if (!file_exists($configPath)) {
+            return false;
+        }
+
+        $config = require $configPath;
+
         $mail = new PHPMailer(true);
 
         try {
-            
-            // Configuração SMTP (ajusta conforme o teu provedor)
-
             $mail->isSMTP();
-            $mail->Host       = 'smtp.gmail.com';
-            $mail->SMTPAuth   = true;
-            $mail->Username   = 'onbuildoficial@gmail.com'; // <--- teu e-mail
-            $mail->Password   = 'jclrmbxrgnobcpyj'; // <--- senha/app password
+            $mail->Host = $config['host'];
+            $mail->SMTPAuth = true;
+            $mail->Username = $config['username'];
+            $mail->Password = $config['password'];
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = 587;
+            $mail->Port = $config['port'];
 
-            $mail->setFrom('onbuildoficial@outlook.pt', 'Suporte');
+            $mail->CharSet = 'UTF-8';
+            $mail->setFrom($config['from_email'], $config['from_name']);
             $mail->addAddress($destinatario);
 
             $mail->isHTML(true);
-            $mail->Subject = mb_convert_encoding($assunto, "UTF-8", "auto");
-            $mail->Body    = $mensagemHtml;
-            $mail->CharSet = "UTF-8";
+            $mail->Subject = $assunto;
+            $mail->Body = $mensagemHtml;
 
-            $mail->send();
-            return true;
+            return $mail->send();
         } catch (Exception $e) {
-            error_log("Erro ao enviar email: {$mail->ErrorInfo}");
             return false;
         }
     }
