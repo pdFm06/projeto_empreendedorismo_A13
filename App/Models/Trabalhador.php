@@ -13,6 +13,7 @@ class Trabalhador extends Model
     private $funcao;
     private $salario_dia;
     private $estado;
+    private $utilizador_id;
 
     public function __get($atributo)
     {
@@ -25,7 +26,7 @@ class Trabalhador extends Model
         return $this;
     }
 
-    public function listar()
+    public function listarPorUtilizador($utilizadorId)
     {
         $query = "
             SELECT
@@ -36,23 +37,32 @@ class Trabalhador extends Model
                 funcao,
                 salario_dia,
                 estado,
+                utilizador_id,
                 criado_em
             FROM trabalhadores
+            WHERE utilizador_id = :utilizador_id
             ORDER BY id DESC
         ";
 
         $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':utilizador_id', $utilizadorId);
         $stmt->execute();
 
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 
-    public function obterPorId($id)
+    public function obterPorIdEUtilizador($id, $utilizadorId)
     {
-        $query = "SELECT * FROM trabalhadores WHERE id = :id";
+        $query = "
+            SELECT *
+            FROM trabalhadores
+            WHERE id = :id
+              AND utilizador_id = :utilizador_id
+        ";
 
         $stmt = $this->db->prepare($query);
         $stmt->bindValue(':id', $id);
+        $stmt->bindValue(':utilizador_id', $utilizadorId);
         $stmt->execute();
 
         return $stmt->fetch(\PDO::FETCH_ASSOC);
@@ -62,9 +72,9 @@ class Trabalhador extends Model
     {
         $query = "
             INSERT INTO trabalhadores
-            (nome, email, telefone, funcao, salario_dia, estado)
+            (nome, email, telefone, funcao, salario_dia, estado, utilizador_id)
             VALUES
-            (:nome, :email, :telefone, :funcao, :salario_dia, :estado)
+            (:nome, :email, :telefone, :funcao, :salario_dia, :estado, :utilizador_id)
         ";
 
         $stmt = $this->db->prepare($query);
@@ -74,6 +84,7 @@ class Trabalhador extends Model
         $stmt->bindValue(':funcao', $this->__get('funcao'));
         $stmt->bindValue(':salario_dia', $this->__get('salario_dia'));
         $stmt->bindValue(':estado', $this->__get('estado'));
+        $stmt->bindValue(':utilizador_id', $this->__get('utilizador_id'));
 
         return $stmt->execute();
     }
@@ -90,6 +101,7 @@ class Trabalhador extends Model
                 salario_dia = :salario_dia,
                 estado = :estado
             WHERE id = :id
+              AND utilizador_id = :utilizador_id
         ";
 
         $stmt = $this->db->prepare($query);
@@ -100,45 +112,23 @@ class Trabalhador extends Model
         $stmt->bindValue(':funcao', $this->__get('funcao'));
         $stmt->bindValue(':salario_dia', $this->__get('salario_dia'));
         $stmt->bindValue(':estado', $this->__get('estado'));
+        $stmt->bindValue(':utilizador_id', $this->__get('utilizador_id'));
 
         return $stmt->execute();
     }
 
-    public function eliminar($id)
-    {
-        $query = "DELETE FROM trabalhadores WHERE id = :id";
-
-        $stmt = $this->db->prepare($query);
-        $stmt->bindValue(':id', $id);
-
-        return $stmt->execute();
-    }
-
-    public function listarPorGestor($gestorId)
+    public function eliminar($id, $utilizadorId)
     {
         $query = "
-            SELECT DISTINCT
-                tr.id,
-                tr.nome,
-                tr.email,
-                tr.telefone,
-                tr.funcao,
-                tr.salario_dia,
-                tr.estado,
-                tr.criado_em
-            FROM trabalhadores tr
-            INNER JOIN equipa_trabalhador et ON et.trabalhador_id = tr.id
-            INNER JOIN equipas e ON e.id = et.equipa_id
-            INNER JOIN projeto_equipa pe ON pe.equipa_id = e.id
-            INNER JOIN projetos p ON p.id = pe.projeto_id
-            WHERE p.gestor_id = :gestor_id
-            ORDER BY tr.id DESC
+            DELETE FROM trabalhadores
+            WHERE id = :id
+              AND utilizador_id = :utilizador_id
         ";
 
         $stmt = $this->db->prepare($query);
-        $stmt->bindValue(':gestor_id', $gestorId);
-        $stmt->execute();
+        $stmt->bindValue(':id', $id);
+        $stmt->bindValue(':utilizador_id', $utilizadorId);
 
-        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        return $stmt->execute();
     }
 }

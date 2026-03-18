@@ -136,8 +136,6 @@
                   data-bs-target="#editProjectModal"
                   data-id="<?= $projeto['id'] ?>"
                   data-nome="<?= htmlspecialchars($projeto['nome']) ?>"
-                  data-gestor-id="<?= htmlspecialchars($projeto['gestor_id']) ?>"
-                  data-gestor-nome="<?= htmlspecialchars($projeto['gestor_nome']) ?>"
                   data-prazo="<?= htmlspecialchars($projeto['data_fim_prevista'] ?? '') ?>"
                   data-inicio="<?= htmlspecialchars($projeto['data_inicio'] ?? '') ?>"
                   data-localizacao="<?= htmlspecialchars($projeto['localizacao'] ?? '') ?>"
@@ -401,15 +399,13 @@
                 </div>
 
                 <div class="mb-3">
-                  <label for="projectManager" class="form-label">Responsável</label>
-                  <select id="projectManager" name="gestor_id" class="form-control">
-                    <option value="">Selecione responsável</option>
-                    <?php foreach ($this->view->gestores as $gestor) { ?>
-                      <option value="<?= $gestor['id'] ?>">
-                        <?= htmlspecialchars($gestor['email']) ?>
-                      </option>
-                    <?php } ?>
-                  </select>
+                  <label class="form-label">Responsável</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    value="<?= htmlspecialchars($_SESSION['email'] ?? 'Utilizador autenticado') ?>"
+                    readonly
+                  />
                 </div>
 
                 <div class="mb-3">
@@ -541,20 +537,13 @@
                 </div>
 
                 <div class="mb-3">
-                  <label for="editProjectManager" class="form-label">Responsável</label>
-                  <select
-                    id="editProjectManager"
-                    name="gestor_id"
+                  <label class="form-label">Responsável</label>
+                  <input
+                    type="text"
                     class="form-control"
-                    required
-                  >
-                    <option value="">Selecione responsável</option>
-                    <?php foreach ($this->view->gestores as $gestor) { ?>
-                      <option value="<?= $gestor['id'] ?>">
-                        <?= htmlspecialchars($gestor['email']) ?>
-                      </option>
-                    <?php } ?>
-                  </select>
+                    value="<?= htmlspecialchars($_SESSION['email'] ?? 'Utilizador autenticado') ?>"
+                    readonly
+                  />
                 </div>
 
                 <div class="mb-3">
@@ -674,7 +663,6 @@
     btn.addEventListener("click", function () {
       document.getElementById("editProjectId").value = this.dataset.id || "";
       document.getElementById("editProjectName").value = this.dataset.nome || "";
-      document.getElementById("editProjectManager").value = this.dataset.gestorId || "";
       document.getElementById("editProjectDeadline").value = this.dataset.prazo || "";
       document.getElementById("editProjectStart").value = this.dataset.inicio || "";
       document.getElementById("editProjectLocation").value = this.dataset.localizacao || "";

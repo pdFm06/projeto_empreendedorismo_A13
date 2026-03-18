@@ -38,13 +38,13 @@
 <div class="container py-4">
   <div class="page-header">
     <h1>Painel Geral</h1>
-    <p class="subtitle">Visão geral dos indicadores</p>
+    <p class="subtitle">Visão geral da sua empresa</p>
   </div>
 
   <div class="row g-4 align-items-stretch">
     <div class="col-12 col-md-6 col-lg-3">
       <div class="dashboard-card">
-        <div class="dashboard-title">Total de projetos</div>
+        <div class="dashboard-title">Projetos</div>
         <div class="dashboard-number"><?= $this->view->dashboard['total_projetos'] ?></div>
         <div class="dashboard-subtext">
           Em execução: <?= $this->view->dashboard['projetos_em_execucao'] ?>
@@ -57,7 +57,7 @@
         <div class="dashboard-title">Projetos concluídos</div>
         <div class="dashboard-number"><?= $this->view->dashboard['projetos_concluidos'] ?></div>
         <div class="dashboard-subtext">
-          Total registado na aplicação
+          Total concluído na sua empresa
         </div>
       </div>
     </div>
@@ -67,7 +67,7 @@
         <div class="dashboard-title">Equipas</div>
         <div class="dashboard-number"><?= $this->view->dashboard['total_equipas'] ?></div>
         <div class="dashboard-subtext">
-          Equipas disponíveis
+          Equipas registadas na sua empresa
         </div>
       </div>
     </div>
@@ -87,7 +87,7 @@
         <div class="dashboard-title">Recursos</div>
         <div class="dashboard-number"><?= $this->view->dashboard['total_recursos'] ?></div>
         <div class="dashboard-subtext">
-          Total de tipos de recurso registados
+          Recursos registados na sua empresa
         </div>
       </div>
     </div>
@@ -119,7 +119,7 @@
           <?= number_format((float)$this->view->dashboard['orcamento_total'], 2, ',', '.') ?> €
         </div>
         <div class="dashboard-subtext">
-          Soma do orçamento de todos os projetos registados
+          Soma do orçamento dos projetos da sua empresa
         </div>
       </div>
     </div>

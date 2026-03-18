@@ -10,6 +10,7 @@ class Equipa extends Model
     private $nome;
     private $especialidade;
     private $lider_id;
+    private $utilizador_id;
 
     public function __get($atributo)
     {
@@ -22,7 +23,7 @@ class Equipa extends Model
         return $this;
     }
 
-    public function listar()
+    public function listarPorUtilizador($utilizadorId)
     {
         $query = "
             SELECT
@@ -30,33 +31,54 @@ class Equipa extends Model
                 e.nome,
                 e.especialidade,
                 e.lider_id,
+                e.utilizador_id,
                 t.nome AS lider_nome,
                 t.funcao AS lider_funcao,
                 e.criado_em
             FROM equipas e
             LEFT JOIN trabalhadores t ON t.id = e.lider_id
+            WHERE e.utilizador_id = :utilizador_id
             ORDER BY e.id DESC
         ";
 
         $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':utilizador_id', $utilizadorId);
         $stmt->execute();
 
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    public function obterPorIdEUtilizador($id, $utilizadorId)
+    {
+        $query = "
+            SELECT *
+            FROM equipas
+            WHERE id = :id
+              AND utilizador_id = :utilizador_id
+        ";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':id', $id);
+        $stmt->bindValue(':utilizador_id', $utilizadorId);
+        $stmt->execute();
+
+        return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
 
     public function criar()
     {
         $query = "
             INSERT INTO equipas
-            (nome, especialidade, lider_id)
+            (nome, especialidade, lider_id, utilizador_id)
             VALUES
-            (:nome, :especialidade, :lider_id)
+            (:nome, :especialidade, :lider_id, :utilizador_id)
         ";
 
         $stmt = $this->db->prepare($query);
         $stmt->bindValue(':nome', $this->__get('nome'));
         $stmt->bindValue(':especialidade', $this->__get('especialidade'));
         $stmt->bindValue(':lider_id', $this->__get('lider_id') ?: null);
+        $stmt->bindValue(':utilizador_id', $this->__get('utilizador_id'));
         $stmt->execute();
 
         return $this->db->lastInsertId();
@@ -71,6 +93,7 @@ class Equipa extends Model
                 especialidade = :especialidade,
                 lider_id = :lider_id
             WHERE id = :id
+              AND utilizador_id = :utilizador_id
         ";
 
         $stmt = $this->db->prepare($query);
@@ -78,16 +101,22 @@ class Equipa extends Model
         $stmt->bindValue(':nome', $this->__get('nome'));
         $stmt->bindValue(':especialidade', $this->__get('especialidade'));
         $stmt->bindValue(':lider_id', $this->__get('lider_id') ?: null);
+        $stmt->bindValue(':utilizador_id', $this->__get('utilizador_id'));
 
         return $stmt->execute();
     }
 
-    public function eliminar($id)
+    public function eliminar($id, $utilizadorId)
     {
-        $query = "DELETE FROM equipas WHERE id = :id";
+        $query = "
+            DELETE FROM equipas
+            WHERE id = :id
+              AND utilizador_id = :utilizador_id
+        ";
 
         $stmt = $this->db->prepare($query);
         $stmt->bindValue(':id', $id);
+        $stmt->bindValue(':utilizador_id', $utilizadorId);
 
         return $stmt->execute();
     }
@@ -139,7 +168,7 @@ class Equipa extends Model
         $query = "
             DELETE FROM equipa_trabalhador
             WHERE equipa_id = :equipa_id
-            AND trabalhador_id = :trabalhador_id
+              AND trabalhador_id = :trabalhador_id
         ";
 
         $stmt = $this->db->prepare($query);
@@ -147,31 +176,5 @@ class Equipa extends Model
         $stmt->bindValue(':trabalhador_id', $trabalhadorId);
 
         return $stmt->execute();
-    }
-
-    public function listarPorGestor($gestorId)
-    {
-        $query = "
-            SELECT DISTINCT
-                e.id,
-                e.nome,
-                e.especialidade,
-                e.lider_id,
-                t.nome AS lider_nome,
-                t.funcao AS lider_funcao,
-                e.criado_em
-            FROM equipas e
-            INNER JOIN projeto_equipa pe ON pe.equipa_id = e.id
-            INNER JOIN projetos p ON p.id = pe.projeto_id
-            LEFT JOIN trabalhadores t ON t.id = e.lider_id
-            WHERE p.gestor_id = :gestor_id
-            ORDER BY e.id DESC
-        ";
-
-        $stmt = $this->db->prepare($query);
-        $stmt->bindValue(':gestor_id', $gestorId);
-        $stmt->execute();
-
-        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 }

@@ -16,6 +16,7 @@ class Projeto extends Model
     private $estado;
     private $orcamento;
     private $gestor_id;
+    private $utilizador_id;
 
     public function __get($atributo)
     {
@@ -28,7 +29,7 @@ class Projeto extends Model
         return $this;
     }
 
-    public function listar()
+    public function listarPorUtilizador($utilizadorId)
     {
         $query = "
             SELECT 
@@ -42,28 +43,33 @@ class Projeto extends Model
                 p.estado,
                 p.orcamento,
                 p.gestor_id,
+                p.utilizador_id,
                 u.email AS gestor_nome
             FROM projetos p
             INNER JOIN utilizadores u ON u.id = p.gestor_id
+            WHERE p.utilizador_id = :utilizador_id
             ORDER BY p.id DESC
         ";
 
         $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':utilizador_id', $utilizadorId);
         $stmt->execute();
 
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 
-    public function obterPorId($id)
+    public function obterPorIdEUtilizador($id, $utilizadorId)
     {
         $query = "
             SELECT * 
             FROM projetos 
             WHERE id = :id
+              AND utilizador_id = :utilizador_id
         ";
 
         $stmt = $this->db->prepare($query);
         $stmt->bindValue(':id', $id);
+        $stmt->bindValue(':utilizador_id', $utilizadorId);
         $stmt->execute();
 
         return $stmt->fetch(\PDO::FETCH_ASSOC);
@@ -73,9 +79,9 @@ class Projeto extends Model
     {
         $query = "
             INSERT INTO projetos
-            (nome, descricao, localizacao, data_inicio, data_fim_prevista, estado, orcamento, gestor_id)
+            (nome, descricao, localizacao, data_inicio, data_fim_prevista, estado, orcamento, gestor_id, utilizador_id)
             VALUES
-            (:nome, :descricao, :localizacao, :data_inicio, :data_fim_prevista, :estado, :orcamento, :gestor_id)
+            (:nome, :descricao, :localizacao, :data_inicio, :data_fim_prevista, :estado, :orcamento, :gestor_id, :utilizador_id)
         ";
 
         $stmt = $this->db->prepare($query);
@@ -87,46 +93,54 @@ class Projeto extends Model
         $stmt->bindValue(':estado', $this->__get('estado'));
         $stmt->bindValue(':orcamento', $this->__get('orcamento'));
         $stmt->bindValue(':gestor_id', $this->__get('gestor_id'));
+        $stmt->bindValue(':utilizador_id', $this->__get('utilizador_id'));
 
         return $stmt->execute();
     }
 
     public function editar()
-{
-    $query = "
-        UPDATE projetos
-        SET
-            nome = :nome,
-            descricao = :descricao,
-            localizacao = :localizacao,
-            data_inicio = :data_inicio,
-            data_fim_prevista = :data_fim_prevista,
-            estado = :estado,
-            orcamento = :orcamento,
-            gestor_id = :gestor_id
-        WHERE id = :id
-    ";
-
-    $stmt = $this->db->prepare($query);
-    $stmt->bindValue(':nome', $this->__get('nome'));
-    $stmt->bindValue(':descricao', $this->__get('descricao'));
-    $stmt->bindValue(':localizacao', $this->__get('localizacao'));
-    $stmt->bindValue(':data_inicio', $this->__get('data_inicio'));
-    $stmt->bindValue(':data_fim_prevista', $this->__get('data_fim_prevista'));
-    $stmt->bindValue(':estado', $this->__get('estado'));
-    $stmt->bindValue(':orcamento', $this->__get('orcamento'));
-    $stmt->bindValue(':gestor_id', $this->__get('gestor_id'));
-    $stmt->bindValue(':id', $this->__get('id'));
-
-    return $stmt->execute();
-}
-
-    public function eliminar($id)
     {
-        $query = "DELETE FROM projetos WHERE id = :id";
+        $query = "
+            UPDATE projetos
+            SET
+                nome = :nome,
+                descricao = :descricao,
+                localizacao = :localizacao,
+                data_inicio = :data_inicio,
+                data_fim_prevista = :data_fim_prevista,
+                estado = :estado,
+                orcamento = :orcamento,
+                gestor_id = :gestor_id
+            WHERE id = :id
+              AND utilizador_id = :utilizador_id
+        ";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':nome', $this->__get('nome'));
+        $stmt->bindValue(':descricao', $this->__get('descricao'));
+        $stmt->bindValue(':localizacao', $this->__get('localizacao'));
+        $stmt->bindValue(':data_inicio', $this->__get('data_inicio'));
+        $stmt->bindValue(':data_fim_prevista', $this->__get('data_fim_prevista'));
+        $stmt->bindValue(':estado', $this->__get('estado'));
+        $stmt->bindValue(':orcamento', $this->__get('orcamento'));
+        $stmt->bindValue(':gestor_id', $this->__get('gestor_id'));
+        $stmt->bindValue(':id', $this->__get('id'));
+        $stmt->bindValue(':utilizador_id', $this->__get('utilizador_id'));
+
+        return $stmt->execute();
+    }
+
+    public function eliminar($id, $utilizadorId)
+    {
+        $query = "
+            DELETE FROM projetos 
+            WHERE id = :id
+              AND utilizador_id = :utilizador_id
+        ";
 
         $stmt = $this->db->prepare($query);
         $stmt->bindValue(':id', $id);
+        $stmt->bindValue(':utilizador_id', $utilizadorId);
 
         return $stmt->execute();
     }
@@ -177,7 +191,7 @@ class Projeto extends Model
         $query = "
             DELETE FROM projeto_equipa
             WHERE projeto_id = :projeto_id
-            AND equipa_id = :equipa_id
+              AND equipa_id = :equipa_id
         ";
 
         $stmt = $this->db->prepare($query);
@@ -185,33 +199,5 @@ class Projeto extends Model
         $stmt->bindValue(':equipa_id', $equipaId);
 
         return $stmt->execute();
-    }
-
-    public function listarPorGestor($gestorId)
-    {
-        $query = "
-            SELECT 
-                p.id,
-                p.nome,
-                p.descricao,
-                p.localizacao,
-                p.data_inicio,
-                p.data_fim_prevista,
-                p.data_fim_real,
-                p.estado,
-                p.orcamento,
-                p.gestor_id,
-                u.email AS gestor_nome
-            FROM projetos p
-            INNER JOIN utilizadores u ON u.id = p.gestor_id
-            WHERE p.gestor_id = :gestor_id
-            ORDER BY p.id DESC
-        ";
-
-        $stmt = $this->db->prepare($query);
-        $stmt->bindValue(':gestor_id', $gestorId);
-        $stmt->execute();
-
-        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 }

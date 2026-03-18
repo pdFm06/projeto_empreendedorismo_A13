@@ -2,16 +2,22 @@
 
 namespace App\Controllers;
 
-#Recursos
 use MF\Controller\Action;
 use MF\Model\Container;
 use App\Lib\Flash;
 
-
-class MainappController extends Action {
+class MainappController extends Action
+{
+    private function validarAutenticacao()
+    {
+        if (!isset($_SESSION['id'])) {
+            Flash::set('warning', 'Tem de iniciar sessão para aceder a essa página.');
+            header('Location: /login');
+            exit;
+        }
+    }
 
     # Dashboard
-
     public function dashboard()
     {
         $this->validarAutenticacao();
@@ -21,14 +27,10 @@ class MainappController extends Action {
         $equipa = Container::getModel('Equipa');
         $recurso = Container::getModel('Recurso');
 
-        // Projetos apenas do utilizador autenticado
-        $projetos = $projeto->listarPorGestor($_SESSION['id']);
-
-        // Mantive estes globais por agora.
-        // Se quiseres, depois também os podemos filtrar por contexto do utilizador.
-        $trabalhadores = $trabalhador->listar();
-        $equipas = $equipa->listar();
-        $recursos = $recurso->listar();
+        $projetos = $projeto->listarPorUtilizador($_SESSION['id']);
+        $trabalhadores = $trabalhador->listarPorUtilizador($_SESSION['id']);
+        $equipas = $equipa->listarPorUtilizador($_SESSION['id']);
+        $recursos = $recurso->listarPorUtilizador($_SESSION['id']);
 
         $totalProjetos = count($projetos);
         $projetosEmExecucao = 0;
@@ -89,22 +91,21 @@ class MainappController extends Action {
     }
 
     # Equipas
-
-   public function equipas()
+    public function equipas()
     {
         $this->validarAutenticacao();
 
         $equipa = Container::getModel('Equipa');
         $trabalhador = Container::getModel('Trabalhador');
 
-        $equipas = $equipa->listarPorGestor($_SESSION['id']);
+        $equipas = $equipa->listarPorUtilizador($_SESSION['id']);
 
         foreach ($equipas as &$eq) {
             $eq['membros'] = $equipa->listarMembros($eq['id']);
         }
 
         $this->view->equipas = $equipas;
-        $this->view->trabalhadores = $trabalhador->listarPorGestor($_SESSION['id']);
+        $this->view->trabalhadores = $trabalhador->listarPorUtilizador($_SESSION['id']);
 
         $this->render('equipas', 'layout_dashboard');
     }
@@ -118,6 +119,7 @@ class MainappController extends Action {
         $equipa->__set('nome', $_POST['nome'] ?? '');
         $equipa->__set('especialidade', $_POST['especialidade'] ?? '');
         $equipa->__set('lider_id', $_POST['lider_id'] ?? null);
+        $equipa->__set('utilizador_id', $_SESSION['id']);
 
         $equipaId = $equipa->criar();
 
@@ -125,6 +127,7 @@ class MainappController extends Action {
             $equipa->adicionarMembro($equipaId, $_POST['lider_id']);
         }
 
+        Flash::set('success', 'Equipa criada com sucesso.');
         header('Location: /equipas');
         exit;
     }
@@ -136,21 +139,29 @@ class MainappController extends Action {
         $id = $_POST['id'] ?? null;
 
         if (!$id) {
+            Flash::set('warning', 'Equipa inválida.');
             header('Location: /equipas');
             exit;
         }
 
         $equipa = Container::getModel('Equipa');
+        $equipaExistente = $equipa->obterPorIdEUtilizador($id, $_SESSION['id']);
+
+        if (!$equipaExistente) {
+            Flash::set('danger', 'Não tem permissão para editar esta equipa.');
+            header('Location: /equipas');
+            exit;
+        }
 
         $equipa->__set('id', $id);
         $equipa->__set('nome', $_POST['nome'] ?? '');
         $equipa->__set('especialidade', $_POST['especialidade'] ?? '');
         $equipa->__set('lider_id', $_POST['lider_id'] ?? null);
+        $equipa->__set('utilizador_id', $_SESSION['id']);
 
         $equipa->editar();
 
         if (!empty($_POST['lider_id'])) {
-            // garante que o líder também está como membro
             $membros = $equipa->listarMembros($id);
             $idsMembros = array_column($membros, 'trabalhador_id');
 
@@ -159,6 +170,7 @@ class MainappController extends Action {
             }
         }
 
+        Flash::set('success', 'Equipa atualizada com sucesso.');
         header('Location: /equipas');
         exit;
     }
@@ -171,7 +183,8 @@ class MainappController extends Action {
 
         if ($id) {
             $equipa = Container::getModel('Equipa');
-            $equipa->eliminar($id);
+            $equipa->eliminar($id, $_SESSION['id']);
+            Flash::set('success', 'Equipa eliminada com sucesso.');
         }
 
         header('Location: /equipas');
@@ -191,8 +204,17 @@ class MainappController extends Action {
         }
 
         $equipa = Container::getModel('Equipa');
+        $equipaExistente = $equipa->obterPorIdEUtilizador($equipaId, $_SESSION['id']);
+
+        if (!$equipaExistente) {
+            Flash::set('danger', 'Não tem permissão para alterar esta equipa.');
+            header('Location: /equipas');
+            exit;
+        }
+
         $equipa->adicionarMembro($equipaId, $trabalhadorId);
 
+        Flash::set('success', 'Membro adicionado com sucesso.');
         header('Location: /equipas');
         exit;
     }
@@ -210,21 +232,28 @@ class MainappController extends Action {
         }
 
         $equipa = Container::getModel('Equipa');
+        $equipaExistente = $equipa->obterPorIdEUtilizador($equipaId, $_SESSION['id']);
+
+        if (!$equipaExistente) {
+            Flash::set('danger', 'Não tem permissão para alterar esta equipa.');
+            header('Location: /equipas');
+            exit;
+        }
+
         $equipa->removerMembro($equipaId, $trabalhadorId);
 
+        Flash::set('success', 'Membro removido com sucesso.');
         header('Location: /equipas');
         exit;
     }
 
     # Recursos
-
     public function recursos()
     {
         $this->validarAutenticacao();
 
         $recurso = Container::getModel('Recurso');
-
-        $this->view->recursos = $recurso->listar();
+        $this->view->recursos = $recurso->listarPorUtilizador($_SESSION['id']);
 
         $this->render('recursos', 'layout_dashboard');
     }
@@ -240,9 +269,11 @@ class MainappController extends Action {
         $recurso->__set('quantidade', $_POST['quantidade'] ?? 0);
         $recurso->__set('custo_unitario', $_POST['custo_unitario'] ?? 0);
         $recurso->__set('estado', $_POST['estado'] ?? 'disponivel');
+        $recurso->__set('utilizador_id', $_SESSION['id']);
 
         $recurso->criar();
 
+        Flash::set('success', 'Recurso criado com sucesso.');
         header('Location: /recursos');
         exit;
     }
@@ -259,6 +290,13 @@ class MainappController extends Action {
         }
 
         $recurso = Container::getModel('Recurso');
+        $recursoExistente = $recurso->obterPorIdEUtilizador($id, $_SESSION['id']);
+
+        if (!$recursoExistente) {
+            Flash::set('danger', 'Não tem permissão para editar este recurso.');
+            header('Location: /recursos');
+            exit;
+        }
 
         $recurso->__set('id', $id);
         $recurso->__set('nome', $_POST['nome'] ?? '');
@@ -266,9 +304,11 @@ class MainappController extends Action {
         $recurso->__set('quantidade', $_POST['quantidade'] ?? 0);
         $recurso->__set('custo_unitario', $_POST['custo_unitario'] ?? 0);
         $recurso->__set('estado', $_POST['estado'] ?? 'disponivel');
+        $recurso->__set('utilizador_id', $_SESSION['id']);
 
         $recurso->editar();
 
+        Flash::set('success', 'Recurso atualizado com sucesso.');
         header('Location: /recursos');
         exit;
     }
@@ -281,7 +321,8 @@ class MainappController extends Action {
 
         if ($id) {
             $recurso = Container::getModel('Recurso');
-            $recurso->eliminar($id);
+            $recurso->eliminar($id, $_SESSION['id']);
+            Flash::set('success', 'Recurso eliminado com sucesso.');
         }
 
         header('Location: /recursos');
@@ -301,21 +342,20 @@ class MainappController extends Action {
         }
 
         $recurso = Container::getModel('Recurso');
-        $recurso->atualizarQuantidade($id, max(0, (int)$quantidade));
+        $recurso->atualizarQuantidade($id, max(0, (int)$quantidade), $_SESSION['id']);
 
+        Flash::set('success', 'Quantidade atualizada com sucesso.');
         header('Location: /recursos');
         exit;
     }
 
     # Trabalhadores
-
     public function trabalhadores()
     {
         $this->validarAutenticacao();
 
         $trabalhador = Container::getModel('Trabalhador');
-
-        $this->view->trabalhadores = $trabalhador->listarPorGestor($_SESSION['id']);
+        $this->view->trabalhadores = $trabalhador->listarPorUtilizador($_SESSION['id']);
 
         $this->render('trabalhadores', 'layout_dashboard');
     }
@@ -332,9 +372,11 @@ class MainappController extends Action {
         $trabalhador->__set('funcao', $_POST['funcao'] ?? '');
         $trabalhador->__set('salario_dia', $_POST['salario_dia'] ?? 0);
         $trabalhador->__set('estado', $_POST['estado'] ?? 'ativo');
+        $trabalhador->__set('utilizador_id', $_SESSION['id']);
 
         $trabalhador->criar();
 
+        Flash::set('success', 'Trabalhador criado com sucesso.');
         header('Location: /trabalhadores');
         exit;
     }
@@ -351,6 +393,13 @@ class MainappController extends Action {
         }
 
         $trabalhador = Container::getModel('Trabalhador');
+        $trabalhadorExistente = $trabalhador->obterPorIdEUtilizador($id, $_SESSION['id']);
+
+        if (!$trabalhadorExistente) {
+            Flash::set('danger', 'Não tem permissão para editar este trabalhador.');
+            header('Location: /trabalhadores');
+            exit;
+        }
 
         $trabalhador->__set('id', $id);
         $trabalhador->__set('nome', $_POST['nome'] ?? '');
@@ -359,9 +408,11 @@ class MainappController extends Action {
         $trabalhador->__set('funcao', $_POST['funcao'] ?? '');
         $trabalhador->__set('salario_dia', $_POST['salario_dia'] ?? 0);
         $trabalhador->__set('estado', $_POST['estado'] ?? 'ativo');
+        $trabalhador->__set('utilizador_id', $_SESSION['id']);
 
         $trabalhador->editar();
 
+        Flash::set('success', 'Trabalhador atualizado com sucesso.');
         header('Location: /trabalhadores');
         exit;
     }
@@ -374,7 +425,8 @@ class MainappController extends Action {
 
         if ($id) {
             $trabalhador = Container::getModel('Trabalhador');
-            $trabalhador->eliminar($id);
+            $trabalhador->eliminar($id, $_SESSION['id']);
+            Flash::set('success', 'Trabalhador eliminado com sucesso.');
         }
 
         header('Location: /trabalhadores');
@@ -382,7 +434,6 @@ class MainappController extends Action {
     }
 
     # Projetos
-
     public function projetos()
     {
         $this->validarAutenticacao();
@@ -392,7 +443,7 @@ class MainappController extends Action {
         $equipa = Container::getModel('Equipa');
         $recurso = Container::getModel('Recurso');
 
-        $projetos = $projeto->listarPorGestor($_SESSION['id']);
+        $projetos = $projeto->listarPorUtilizador($_SESSION['id']);
 
         foreach ($projetos as &$p) {
             $p['equipas'] = $projeto->listarEquipas($p['id']);
@@ -401,8 +452,8 @@ class MainappController extends Action {
 
         $this->view->projetos = $projetos;
         $this->view->gestores = $utilizador->listarTodos();
-        $this->view->equipasDisponiveis = $equipa->listar();
-        $this->view->recursosDisponiveis = $recurso->listar();
+        $this->view->equipasDisponiveis = $equipa->listarPorUtilizador($_SESSION['id']);
+        $this->view->recursosDisponiveis = $recurso->listarPorUtilizador($_SESSION['id']);
 
         $this->render('projetos', 'layout_dashboard');
     }
@@ -410,8 +461,6 @@ class MainappController extends Action {
     public function criarProjeto()
     {
         $this->validarAutenticacao();
-
-        session_start();
 
         if (empty(trim($_POST['nome'] ?? ''))) {
             Flash::set('warning', 'O nome do projeto é obrigatório.');
@@ -428,7 +477,8 @@ class MainappController extends Action {
         $projeto->__set('data_fim_prevista', $_POST['data_fim_prevista'] ?? null);
         $projeto->__set('estado', $_POST['estado'] ?? 'planeado');
         $projeto->__set('orcamento', $_POST['orcamento'] ?? 0);
-        $projeto->__set('gestor_id', $_POST['gestor_id'] ?? ($_SESSION['id'] ?? 1));
+        $projeto->__set('gestor_id', $_SESSION['id']);
+        $projeto->__set('utilizador_id', $_SESSION['id']);
 
         if ($projeto->criar()) {
             Flash::set('success', 'Projeto criado com sucesso.');
@@ -447,20 +497,29 @@ class MainappController extends Action {
         $id = $_POST['id'] ?? null;
 
         if (!$id) {
+            Flash::set('warning', 'Projeto inválido.');
+            header('Location: /projetos');
+            exit;
+        }
+
+        if (empty(trim($_POST['nome'] ?? ''))) {
+            Flash::set('warning', 'O nome do projeto é obrigatório.');
             header('Location: /projetos');
             exit;
         }
 
         $projeto = Container::getModel('Projeto');
-        $projetoExistente = $projeto->obterPorId($id);
+        $projetoExistente = $projeto->obterPorIdEUtilizador($id, $_SESSION['id']);
 
-        if (!$projetoExistente || (int)$projetoExistente['gestor_id'] !== (int)$_SESSION['id']) {
+        if (!$projetoExistente) {
+            Flash::set('danger', 'Não tem permissão para editar este projeto.');
             header('Location: /projetos');
             exit;
         }
 
         $projeto->__set('id', $id);
-        $projeto->__set('gestor_id', $_POST['gestor_id'] ?? $_SESSION['id']);
+        $projeto->__set('gestor_id', $_SESSION['id']);
+        $projeto->__set('utilizador_id', $_SESSION['id']);
         $projeto->__set('nome', $_POST['nome'] ?? '');
         $projeto->__set('descricao', $_POST['descricao'] ?? '');
         $projeto->__set('localizacao', $_POST['localizacao'] ?? '');
@@ -469,12 +528,15 @@ class MainappController extends Action {
         $projeto->__set('estado', $_POST['estado'] ?? 'planeado');
         $projeto->__set('orcamento', $_POST['orcamento'] ?? 0);
 
-        $projeto->editar();
+        if ($projeto->editar()) {
+            Flash::set('success', 'Projeto atualizado com sucesso.');
+        } else {
+            Flash::set('danger', 'Não foi possível atualizar o projeto.');
+        }
 
         header('Location: /projetos');
         exit;
     }
-
 
     public function eliminarProjeto()
     {
@@ -483,19 +545,25 @@ class MainappController extends Action {
         $id = $_GET['id'] ?? null;
 
         if (!$id) {
+            Flash::set('warning', 'Projeto inválido.');
             header('Location: /projetos');
             exit;
         }
 
         $projeto = Container::getModel('Projeto');
-        $projetoExistente = $projeto->obterPorId($id);
+        $projetoExistente = $projeto->obterPorIdEUtilizador($id, $_SESSION['id']);
 
-        if (!$projetoExistente || (int)$projetoExistente['gestor_id'] !== (int)$_SESSION['id']) {
+        if (!$projetoExistente) {
+            Flash::set('danger', 'Não tem permissão para eliminar este projeto.');
             header('Location: /projetos');
             exit;
         }
 
-        $projeto->eliminar($id);
+        if ($projeto->eliminar($id, $_SESSION['id'])) {
+            Flash::set('success', 'Projeto eliminado com sucesso.');
+        } else {
+            Flash::set('danger', 'Não foi possível eliminar o projeto.');
+        }
 
         header('Location: /projetos');
         exit;
@@ -514,8 +582,20 @@ class MainappController extends Action {
         }
 
         $projeto = Container::getModel('Projeto');
+        $equipa = Container::getModel('Equipa');
+
+        $projetoExistente = $projeto->obterPorIdEUtilizador($projetoId, $_SESSION['id']);
+        $equipaExistente = $equipa->obterPorIdEUtilizador($equipaId, $_SESSION['id']);
+
+        if (!$projetoExistente || !$equipaExistente) {
+            Flash::set('danger', 'Associação inválida.');
+            header('Location: /projetos');
+            exit;
+        }
+
         $projeto->adicionarEquipa($projetoId, $equipaId);
 
+        Flash::set('success', 'Equipa associada ao projeto com sucesso.');
         header('Location: /projetos');
         exit;
     }
@@ -533,8 +613,17 @@ class MainappController extends Action {
         }
 
         $projeto = Container::getModel('Projeto');
+        $projetoExistente = $projeto->obterPorIdEUtilizador($projetoId, $_SESSION['id']);
+
+        if (!$projetoExistente) {
+            Flash::set('danger', 'Não tem permissão para alterar este projeto.');
+            header('Location: /projetos');
+            exit;
+        }
+
         $projeto->removerEquipa($projetoId, $equipaId);
 
+        Flash::set('success', 'Equipa removida do projeto com sucesso.');
         header('Location: /projetos');
         exit;
     }
@@ -552,9 +641,21 @@ class MainappController extends Action {
             exit;
         }
 
+        $projeto = Container::getModel('Projeto');
         $recurso = Container::getModel('Recurso');
+
+        $projetoExistente = $projeto->obterPorIdEUtilizador($projetoId, $_SESSION['id']);
+        $recursoExistente = $recurso->obterPorIdEUtilizador($recursoId, $_SESSION['id']);
+
+        if (!$projetoExistente || !$recursoExistente) {
+            Flash::set('danger', 'Associação inválida.');
+            header('Location: /projetos');
+            exit;
+        }
+
         $recurso->adicionarAoProjeto($projetoId, $recursoId, max(1, (int)$quantidadeAfetada));
 
+        Flash::set('success', 'Recurso associado ao projeto com sucesso.');
         header('Location: /projetos');
         exit;
     }
@@ -571,23 +672,20 @@ class MainappController extends Action {
             exit;
         }
 
+        $projeto = Container::getModel('Projeto');
+        $projetoExistente = $projeto->obterPorIdEUtilizador($projetoId, $_SESSION['id']);
+
+        if (!$projetoExistente) {
+            Flash::set('danger', 'Não tem permissão para alterar este projeto.');
+            header('Location: /projetos');
+            exit;
+        }
+
         $recurso = Container::getModel('Recurso');
         $recurso->removerDoProjeto($projetoId, $recursoId);
 
+        Flash::set('success', 'Recurso removido do projeto com sucesso.');
         header('Location: /projetos');
         exit;
     }
-
-    private function validarAutenticacao()
-    {
-        if (!isset($_SESSION['id'])) {
-            Flash::set('warning', 'Tem de iniciar sessão para aceder a essa página.');
-            header('Location: /login');
-            exit;
-        }
-    }
-
 }
-
-
-?>

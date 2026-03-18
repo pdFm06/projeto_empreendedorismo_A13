@@ -12,6 +12,7 @@ class Recurso extends Model
     private $quantidade;
     private $custo_unitario;
     private $estado;
+    private $utilizador_id;
 
     public function __get($atributo)
     {
@@ -24,7 +25,7 @@ class Recurso extends Model
         return $this;
     }
 
-    public function listar()
+    public function listarPorUtilizador($utilizadorId)
     {
         $query = "
             SELECT
@@ -34,24 +35,44 @@ class Recurso extends Model
                 quantidade,
                 custo_unitario,
                 estado,
+                utilizador_id,
                 criado_em
             FROM recursos
+            WHERE utilizador_id = :utilizador_id
             ORDER BY id DESC
         ";
 
         $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':utilizador_id', $utilizadorId);
         $stmt->execute();
 
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    public function obterPorIdEUtilizador($id, $utilizadorId)
+    {
+        $query = "
+            SELECT *
+            FROM recursos
+            WHERE id = :id
+              AND utilizador_id = :utilizador_id
+        ";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':id', $id);
+        $stmt->bindValue(':utilizador_id', $utilizadorId);
+        $stmt->execute();
+
+        return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
 
     public function criar()
     {
         $query = "
             INSERT INTO recursos
-            (nome, tipo, quantidade, custo_unitario, estado)
+            (nome, tipo, quantidade, custo_unitario, estado, utilizador_id)
             VALUES
-            (:nome, :tipo, :quantidade, :custo_unitario, :estado)
+            (:nome, :tipo, :quantidade, :custo_unitario, :estado, :utilizador_id)
         ";
 
         $stmt = $this->db->prepare($query);
@@ -60,6 +81,7 @@ class Recurso extends Model
         $stmt->bindValue(':quantidade', $this->__get('quantidade'));
         $stmt->bindValue(':custo_unitario', $this->__get('custo_unitario'));
         $stmt->bindValue(':estado', $this->__get('estado'));
+        $stmt->bindValue(':utilizador_id', $this->__get('utilizador_id'));
 
         return $stmt->execute();
     }
@@ -75,6 +97,7 @@ class Recurso extends Model
                 custo_unitario = :custo_unitario,
                 estado = :estado
             WHERE id = :id
+              AND utilizador_id = :utilizador_id
         ";
 
         $stmt = $this->db->prepare($query);
@@ -84,31 +107,39 @@ class Recurso extends Model
         $stmt->bindValue(':quantidade', $this->__get('quantidade'));
         $stmt->bindValue(':custo_unitario', $this->__get('custo_unitario'));
         $stmt->bindValue(':estado', $this->__get('estado'));
+        $stmt->bindValue(':utilizador_id', $this->__get('utilizador_id'));
 
         return $stmt->execute();
     }
 
-    public function eliminar($id)
+    public function eliminar($id, $utilizadorId)
     {
-        $query = "DELETE FROM recursos WHERE id = :id";
+        $query = "
+            DELETE FROM recursos
+            WHERE id = :id
+              AND utilizador_id = :utilizador_id
+        ";
 
         $stmt = $this->db->prepare($query);
         $stmt->bindValue(':id', $id);
+        $stmt->bindValue(':utilizador_id', $utilizadorId);
 
         return $stmt->execute();
     }
 
-    public function atualizarQuantidade($id, $quantidade)
+    public function atualizarQuantidade($id, $quantidade, $utilizadorId)
     {
         $query = "
             UPDATE recursos
             SET quantidade = :quantidade
             WHERE id = :id
+              AND utilizador_id = :utilizador_id
         ";
 
         $stmt = $this->db->prepare($query);
         $stmt->bindValue(':id', $id);
         $stmt->bindValue(':quantidade', $quantidade);
+        $stmt->bindValue(':utilizador_id', $utilizadorId);
 
         return $stmt->execute();
     }
@@ -161,7 +192,7 @@ class Recurso extends Model
         $query = "
             DELETE FROM projeto_recurso
             WHERE projeto_id = :projeto_id
-            AND recurso_id = :recurso_id
+              AND recurso_id = :recurso_id
         ";
 
         $stmt = $this->db->prepare($query);
