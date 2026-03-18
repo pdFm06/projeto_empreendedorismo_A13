@@ -88,7 +88,11 @@ class AuthController extends Action
     # Página de pedir recuperação da password
     public function trocarPalavraPasse()
     {
-        $this->view->erro = $this->view->erro ?? '';
+        if (isset($_SESSION['id'])) {
+            header('Location: /dashboard');
+            exit;
+        }
+
         $this->render('forgotpassword', 'layout1');
     }
 
@@ -120,7 +124,7 @@ class AuthController extends Action
                 <p>Se não fez este pedido, ignore este e-mail.</p>
             ";
 
-            Email::enviar($email, 'Código de recuperação de conta', $mensagemHtml);
+            Email::enviar($email, 'Código de recuperação de conta - OnBUILD', $mensagemHtml);
             $_SESSION['reset_email'] = $email;
         }
 
@@ -231,7 +235,11 @@ class AuthController extends Action
     # Página de inserir o código recebido
     public function mostrarCodigo()
     {
-        $this->view->erro = $this->view->erro ?? '';
+        if (isset($_SESSION['id'])) {
+            header('Location: /dashboard');
+            exit;
+        }
+
         $this->render('codigo', 'layout1');
     }
 

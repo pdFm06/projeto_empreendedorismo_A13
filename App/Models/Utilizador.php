@@ -61,33 +61,32 @@ class Utilizador extends Model {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-        // --- Definir token de recuperação ---
     public function definirTokenRecuperacao(string $token): bool
     {
         $tokenHash = password_hash($token, PASSWORD_DEFAULT);
 
         $sql = "UPDATE utilizadores 
-                SET reset_token = :token, reset_expires_at = DATE_ADD(NOW(), INTERVAL 1 HOUR)
+                SET reset_token_hash = :token_hash,
+                    reset_token_expires_at = DATE_ADD(NOW(), INTERVAL 1 HOUR)
                 WHERE email = :email";
         $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':token', $tokenHash);
+        $stmt->bindValue(':token_hash', $tokenHash);
         $stmt->bindValue(':email', $this->__get('email'));
 
         return $stmt->execute();
     }
 
-    // --- Obter utilizador por token válido ---
-    public function obterPorToken(string $token) {
-        // Busca todos com token válido e não expirado
+    public function obterPorToken(string $token)
+    {
         $sql = "SELECT * FROM utilizadores 
-                WHERE reset_token IS NOT NULL AND reset_expires_at > NOW()";
+                WHERE reset_token_hash IS NOT NULL
+                AND reset_token_expires_at > NOW()";
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
         $users = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
-        // Verifica qual hash corresponde ao token
         foreach ($users as $user) {
-            if (password_verify($token, $user['reset_token'])) {
+            if (password_verify($token, $user['reset_token_hash'])) {
                 return $user;
             }
         }
@@ -95,10 +94,12 @@ class Utilizador extends Model {
         return false;
     }
 
-    // --- Atualizar password e limpar token ---
-    public function atualizarPasswordPorId(int $id, string $passwordHash) {
+    public function atualizarPasswordPorId(int $id, string $passwordHash)
+    {
         $sql = "UPDATE utilizadores 
-                SET password = :password, reset_token = NULL, reset_expires_at = NULL
+                SET password = :password,
+                    reset_token_hash = NULL,
+                    reset_token_expires_at = NULL
                 WHERE id = :id";
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':password', $passwordHash);
@@ -107,11 +108,15 @@ class Utilizador extends Model {
         return $stmt->execute();
     }
 
-    // --- Limpar token manualmente (opcional) ---
-    public function limparToken() {
-        $sql = "UPDATE utilizadores SET reset_token = NULL, reset_expires_at = NULL WHERE email = :email";
+    public function limparToken()
+    {
+        $sql = "UPDATE utilizadores
+                SET reset_token_hash = NULL,
+                    reset_token_expires_at = NULL
+                WHERE email = :email";
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':email', $this->__get('email'));
+
         return $stmt->execute();
     }
 

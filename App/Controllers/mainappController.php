@@ -14,6 +14,9 @@ class MainappController extends Action {
 
     public function dashboard()
     {
+
+        $this->validarAutenticacao();
+        
         $projeto = Container::getModel('Projeto');
         $trabalhador = Container::getModel('Trabalhador');
         $equipa = Container::getModel('Equipa');
@@ -86,6 +89,8 @@ class MainappController extends Action {
 
     public function equipas()
     {
+        $this->validarAutenticacao();
+
         $equipa = Container::getModel('Equipa');
         $trabalhador = Container::getModel('Trabalhador');
 
@@ -103,6 +108,8 @@ class MainappController extends Action {
 
     public function criarEquipa()
     {
+        $this->validarAutenticacao();
+
         $equipa = Container::getModel('Equipa');
 
         $equipa->__set('nome', $_POST['nome'] ?? '');
@@ -121,6 +128,8 @@ class MainappController extends Action {
 
     public function editarEquipa()
     {
+        $this->validarAutenticacao();
+
         $id = $_POST['id'] ?? null;
 
         if (!$id) {
@@ -153,6 +162,8 @@ class MainappController extends Action {
 
     public function eliminarEquipa()
     {
+        $this->validarAutenticacao();
+
         $id = $_GET['id'] ?? null;
 
         if ($id) {
@@ -166,6 +177,8 @@ class MainappController extends Action {
 
     public function adicionarMembroEquipa()
     {
+        $this->validarAutenticacao();
+
         $equipaId = $_POST['equipa_id'] ?? null;
         $trabalhadorId = $_POST['trabalhador_id'] ?? null;
 
@@ -183,6 +196,8 @@ class MainappController extends Action {
 
     public function removerMembroEquipa()
     {
+        $this->validarAutenticacao();
+
         $equipaId = $_GET['equipa_id'] ?? null;
         $trabalhadorId = $_GET['trabalhador_id'] ?? null;
 
@@ -202,6 +217,8 @@ class MainappController extends Action {
 
     public function recursos()
     {
+        $this->validarAutenticacao();
+
         $recurso = Container::getModel('Recurso');
 
         $this->view->recursos = $recurso->listar();
@@ -211,6 +228,8 @@ class MainappController extends Action {
 
     public function criarRecurso()
     {
+        $this->validarAutenticacao();
+
         $recurso = Container::getModel('Recurso');
 
         $recurso->__set('nome', $_POST['nome'] ?? '');
@@ -227,6 +246,8 @@ class MainappController extends Action {
 
     public function editarRecurso()
     {
+        $this->validarAutenticacao();
+
         $id = $_POST['id'] ?? null;
 
         if (!$id) {
@@ -251,6 +272,8 @@ class MainappController extends Action {
 
     public function eliminarRecurso()
     {
+        $this->validarAutenticacao();
+
         $id = $_GET['id'] ?? null;
 
         if ($id) {
@@ -264,6 +287,8 @@ class MainappController extends Action {
 
     public function atualizarQuantidadeRecurso()
     {
+        $this->validarAutenticacao();
+
         $id = $_POST['id'] ?? null;
         $quantidade = $_POST['quantidade'] ?? null;
 
@@ -283,6 +308,8 @@ class MainappController extends Action {
 
     public function trabalhadores()
     {
+        $this->validarAutenticacao();
+
         $trabalhador = Container::getModel('Trabalhador');
 
         $this->view->trabalhadores = $trabalhador->listar();
@@ -292,6 +319,8 @@ class MainappController extends Action {
 
     public function criarTrabalhador()
     {
+        $this->validarAutenticacao();
+
         $trabalhador = Container::getModel('Trabalhador');
 
         $trabalhador->__set('nome', $_POST['nome'] ?? '');
@@ -309,6 +338,8 @@ class MainappController extends Action {
 
     public function editarTrabalhador()
     {
+        $this->validarAutenticacao();
+
         $id = $_POST['id'] ?? null;
 
         if (!$id) {
@@ -334,6 +365,8 @@ class MainappController extends Action {
 
     public function eliminarTrabalhador()
     {
+        $this->validarAutenticacao();
+
         $id = $_GET['id'] ?? null;
 
         if ($id) {
@@ -349,6 +382,8 @@ class MainappController extends Action {
 
     public function projetos()
     {
+        $this->validarAutenticacao(); 
+
         $projeto = Container::getModel('Projeto');
         $utilizador = Container::getModel('Utilizador');
         $equipa = Container::getModel('Equipa');
@@ -371,6 +406,8 @@ class MainappController extends Action {
 
     public function criarProjeto()
     {
+        $this->validarAutenticacao();
+
         session_start();
 
         if (empty(trim($_POST['nome'] ?? ''))) {
@@ -402,6 +439,8 @@ class MainappController extends Action {
 
     public function editarProjeto()
     {
+        $this->validarAutenticacao();
+
         session_start();
 
         $id = $_POST['id'] ?? null;
@@ -443,6 +482,8 @@ class MainappController extends Action {
 
     public function eliminarProjeto()
     {
+        $this->validarAutenticacao();
+
         session_start();
 
         $id = $_GET['id'] ?? null;
@@ -467,6 +508,8 @@ class MainappController extends Action {
 
     public function adicionarEquipaProjeto()
     {
+        $this->validarAutenticacao();
+
         $projetoId = $_POST['projeto_id'] ?? null;
         $equipaId = $_POST['equipa_id'] ?? null;
 
@@ -484,6 +527,8 @@ class MainappController extends Action {
 
     public function removerEquipaProjeto()
     {
+        $this->validarAutenticacao();
+
         $projetoId = $_GET['projeto_id'] ?? null;
         $equipaId = $_GET['equipa_id'] ?? null;
 
@@ -501,6 +546,8 @@ class MainappController extends Action {
 
     public function adicionarRecursoProjeto()
     {
+        $this->validarAutenticacao();
+
         $projetoId = $_POST['projeto_id'] ?? null;
         $recursoId = $_POST['recurso_id'] ?? null;
         $quantidadeAfetada = $_POST['quantidade_afetada'] ?? null;
@@ -519,6 +566,8 @@ class MainappController extends Action {
 
     public function removerRecursoProjeto()
     {
+        $this->validarAutenticacao();
+
         $projetoId = $_GET['projeto_id'] ?? null;
         $recursoId = $_GET['recurso_id'] ?? null;
 
@@ -532,6 +581,15 @@ class MainappController extends Action {
 
         header('Location: /projetos');
         exit;
+    }
+
+    private function validarAutenticacao()
+    {
+        if (!isset($_SESSION['id'])) {
+            Flash::set('warning', 'Tem de iniciar sessão para aceder a essa página.');
+            header('Location: /login');
+            exit;
+        }
     }
 
 }
