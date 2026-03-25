@@ -1235,7 +1235,7 @@ class MainappController extends Action
         $config = $this->lerConfiguracaoOpenAI();
 
         $apiKey = $config['OPENAI_API_KEY'] ?? null;
-        $model = $config['OPENAI_MODEL'] ?? 'gpt-5.4';
+        $model = $config['OPENAI_MODEL'] ?? 'gpt-5.4-mini';
 
         if (!$apiKey || trim($apiKey) === '') {
             throw new \Exception('OPENAI_API_KEY não configurada.');
