@@ -274,6 +274,12 @@ class Route extends Bootstrap {
             'action' => 'exportarRecursosCsv'
         );
 
+        $routes['exportar_relatorio_pdf'] = array(
+            'route' => '/exportar_relatorio_pdf',
+            'controller' => 'mainappController',
+            'action' => 'exportarRelatorioPdf'
+        );
+
 
         $this->setRoutes($routes);
     }

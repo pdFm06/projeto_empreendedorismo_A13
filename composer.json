@@ -2,7 +2,8 @@
   "name": "empreendedorismo/miniframework",
   "require": {
     "php": ">= 7.0",
-    "phpmailer/phpmailer": "^7.0"
+    "phpmailer/phpmailer": "^7.0",
+    "dompdf/dompdf": "^3.1"
   },
   "authors": [
     {

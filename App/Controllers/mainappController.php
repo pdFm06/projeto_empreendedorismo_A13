@@ -5,6 +5,8 @@ namespace App\Controllers;
 use MF\Controller\Action;
 use MF\Model\Container;
 use App\Lib\Flash;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 
 class MainappController extends Action
 {
@@ -1058,5 +1060,147 @@ class MainappController extends Action
             ['ID', 'Nome', 'Tipo', 'Quantidade', 'Custo Unitário', 'Estado'],
             $linhas
         );
+    }
+    public function exportarRelatorioPdf()
+    {
+        $this->validarAutenticacao();
+
+        $projeto = \MF\Model\Container::getModel('Projeto');
+        $trabalhador = \MF\Model\Container::getModel('Trabalhador');
+        $equipa = \MF\Model\Container::getModel('Equipa');
+        $recurso = \MF\Model\Container::getModel('Recurso');
+
+        $projetos = $projeto->listarPorUtilizador($_SESSION['id']);
+        $trabalhadores = $trabalhador->listarPorUtilizador($_SESSION['id']);
+        $equipas = $equipa->listarPorUtilizador($_SESSION['id']);
+        $recursos = $recurso->listarPorUtilizador($_SESSION['id']);
+
+        $projetosEmExecucao = 0;
+        $projetosConcluidos = 0;
+        $orcamentoTotal = 0;
+        $trabalhadoresAtivos = 0;
+        $recursosBaixoStock = 0;
+        $recursosEsgotados = 0;
+
+        foreach ($projetos as $p) {
+            if (($p['estado'] ?? '') === 'em_execucao') {
+                $projetosEmExecucao++;
+            }
+
+            if (($p['estado'] ?? '') === 'concluido') {
+                $projetosConcluidos++;
+            }
+
+            $orcamentoTotal += (float)($p['orcamento'] ?? 0);
+        }
+
+        foreach ($trabalhadores as $t) {
+            if (($t['estado'] ?? '') === 'ativo') {
+                $trabalhadoresAtivos++;
+            }
+        }
+
+        foreach ($recursos as $r) {
+            $quantidade = (int)($r['quantidade'] ?? 0);
+
+            if ($quantidade === 0) {
+                $recursosEsgotados++;
+            } elseif ($quantidade <= 10) {
+                $recursosBaixoStock++;
+            }
+        }
+
+        $dados = [
+            'empresa' => $_SESSION['email'] ?? 'Utilizador',
+            'total_projetos' => count($projetos),
+            'projetos_em_execucao' => $projetosEmExecucao,
+            'projetos_concluidos' => $projetosConcluidos,
+            'orcamento_total' => $orcamentoTotal,
+            'total_trabalhadores' => count($trabalhadores),
+            'trabalhadores_ativos' => $trabalhadoresAtivos,
+            'total_equipas' => count($equipas),
+            'total_recursos' => count($recursos),
+            'recursos_baixo_stock' => $recursosBaixoStock,
+            'recursos_esgotados' => $recursosEsgotados,
+        ];
+
+        ob_start();
+        ?>
+        <!DOCTYPE html>
+        <html lang="pt">
+        <head>
+        <meta charset="UTF-8">
+        <title>Relatório Geral</title>
+        <style>
+            body {
+            font-family: DejaVu Sans, sans-serif;
+            color: #1f2937;
+            font-size: 14px;
+            line-height: 1.5;
+            }
+
+            h1 {
+            font-size: 24px;
+            margin-bottom: 4px;
+            }
+
+            .subtitle {
+            color: #6b7280;
+            margin-bottom: 24px;
+            }
+
+            .box {
+            border: 1px solid #dbe3ef;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 12px;
+            }
+
+            .label {
+            font-weight: bold;
+            }
+
+            .value {
+            float: right;
+            }
+
+            .section-title {
+            margin-top: 24px;
+            margin-bottom: 10px;
+            font-size: 18px;
+            }
+        </style>
+        </head>
+        <body>
+        <h1>Relatório Geral</h1>
+        <div class="subtitle">Resumo da empresa associada à conta <?= htmlspecialchars($dados['empresa']) ?></div>
+
+        <div class="section-title">Indicadores principais</div>
+
+        <div class="box"><span class="label">Projetos</span><span class="value"><?= $dados['total_projetos'] ?></span></div>
+        <div class="box"><span class="label">Projetos em execução</span><span class="value"><?= $dados['projetos_em_execucao'] ?></span></div>
+        <div class="box"><span class="label">Projetos concluídos</span><span class="value"><?= $dados['projetos_concluidos'] ?></span></div>
+        <div class="box"><span class="label">Equipas</span><span class="value"><?= $dados['total_equipas'] ?></span></div>
+        <div class="box"><span class="label">Trabalhadores</span><span class="value"><?= $dados['total_trabalhadores'] ?></span></div>
+        <div class="box"><span class="label">Trabalhadores ativos</span><span class="value"><?= $dados['trabalhadores_ativos'] ?></span></div>
+        <div class="box"><span class="label">Recursos</span><span class="value"><?= $dados['total_recursos'] ?></span></div>
+        <div class="box"><span class="label">Recursos com baixo stock</span><span class="value"><?= $dados['recursos_baixo_stock'] ?></span></div>
+        <div class="box"><span class="label">Recursos esgotados</span><span class="value"><?= $dados['recursos_esgotados'] ?></span></div>
+        <div class="box"><span class="label">Orçamento total</span><span class="value"><?= number_format((float)$dados['orcamento_total'], 2, ',', '.') ?> €</span></div>
+        </body>
+        </html>
+        <?php
+        $html = ob_get_clean();
+
+        $options = new Options();
+        $options->set('isRemoteEnabled', true);
+
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html, 'UTF-8');
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        $dompdf->stream('relatorio_geral.pdf', ['Attachment' => true]);
+        exit;
     }
 }
