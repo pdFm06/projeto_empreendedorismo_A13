@@ -1518,4 +1518,100 @@ class MainappController extends Action
         header('Location: /projetos');
         exit;
     }
+
+    public function definicoes()
+    {
+        $this->validarAutenticacao();
+
+        $utilizador = Container::getModel('Utilizador');
+        $utilizador->__set('id', $_SESSION['id']);
+
+        $this->view->conta = $utilizador->obterContaPorId($_SESSION['id']);
+        $this->render('definicoes', 'layout_dashboard');
+    }
+
+    public function guardarTema()
+    {
+        $this->validarAutenticacao();
+
+        $tema = $_POST['tema'] ?? 'light';
+
+        if (!in_array($tema, ['light', 'dark'])) {
+            Flash::set('warning', 'Tema inválido.');
+            header('Location: /definicoes');
+            exit;
+        }
+
+        $utilizador = Container::getModel('Utilizador');
+        $utilizador->atualizarTema($_SESSION['id'], $tema);
+
+        $_SESSION['tema'] = $tema;
+
+        Flash::set('success', 'Tema atualizado com sucesso.');
+        header('Location: /definicoes');
+        exit;
+    }
+
+    public function alterarPasswordConta()
+    {
+        $this->validarAutenticacao();
+
+        $passwordAtual = $_POST['password_atual'] ?? '';
+        $novaPassword = $_POST['nova_password'] ?? '';
+        $confirmacao = $_POST['confirmar_password'] ?? '';
+
+        if ($novaPassword === '' || $confirmacao === '') {
+            Flash::set('warning', 'Preencha todos os campos da palavra-passe.');
+            header('Location: /definicoes');
+            exit;
+        }
+
+        if ($novaPassword !== $confirmacao) {
+            Flash::set('warning', 'A nova palavra-passe e a confirmação não coincidem.');
+            header('Location: /definicoes');
+            exit;
+        }
+
+        $utilizador = Container::getModel('Utilizador');
+        $utilizador->__set('email', $_SESSION['email']);
+        $conta = $utilizador->obterPorEmail();
+
+        if (!$conta || !password_verify($passwordAtual, trim($conta['password']))) {
+            Flash::set('danger', 'A palavra-passe atual está incorreta.');
+            header('Location: /definicoes');
+            exit;
+        }
+
+        $hash = password_hash($novaPassword, PASSWORD_DEFAULT);
+        $utilizador->atualizarPasswordConta($_SESSION['id'], $hash);
+
+        Flash::set('success', 'Palavra-passe alterada com sucesso.');
+        header('Location: /definicoes');
+        exit;
+    }
+
+    public function apagarConta()
+    {
+        $this->validarAutenticacao();
+
+        $password = $_POST['password_confirmacao'] ?? '';
+
+        $utilizador = Container::getModel('Utilizador');
+        $utilizador->__set('email', $_SESSION['email']);
+        $conta = $utilizador->obterPorEmail();
+
+        if (!$conta || !password_verify($password, trim($conta['password']))) {
+            Flash::set('danger', 'Palavra-passe incorreta. Não foi possível apagar a conta.');
+            header('Location: /definicoes');
+            exit;
+        }
+
+        $utilizador->eliminarConta($_SESSION['id']);
+
+        session_unset();
+        session_destroy();
+
+        header('Location: /login');
+        exit;
+    }
 }

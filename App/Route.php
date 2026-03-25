@@ -304,6 +304,30 @@ class Route extends Bootstrap {
             'action' => 'eliminarTarefa'
         );
 
+        $routes['definicoes'] = array(
+            'route' => '/definicoes',
+            'controller' => 'mainappController',
+            'action' => 'definicoes'
+        );
+
+        $routes['guardar_tema'] = array(
+            'route' => '/guardar_tema',
+            'controller' => 'mainappController',
+            'action' => 'guardarTema'
+        );
+
+        $routes['alterar_password_conta'] = array(
+            'route' => '/alterar_password_conta',
+            'controller' => 'mainappController',
+            'action' => 'alterarPasswordConta'
+        );
+
+        $routes['apagar_conta'] = array(
+            'route' => '/apagar_conta',
+            'controller' => 'mainappController',
+            'action' => 'apagarConta'
+        );
+
 
         $this->setRoutes($routes);
     }

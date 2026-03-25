@@ -127,4 +127,43 @@ class Utilizador extends Model {
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function obterContaPorId($id)
+    {
+        $query = "SELECT id, email, tema, mfa_ativo FROM utilizadores WHERE id = :id LIMIT 1";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':id', $id);
+        $stmt->execute();
+
+        return $stmt->fetch(\PDO::FETCH_ASSOC);
+    }
+
+    public function atualizarTema($id, $tema)
+    {
+        $query = "UPDATE utilizadores SET tema = :tema WHERE id = :id";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':tema', $tema);
+        $stmt->bindValue(':id', $id);
+
+        return $stmt->execute();
+    }
+
+    public function atualizarPasswordConta($id, $passwordHash)
+    {
+        $query = "UPDATE utilizadores SET password = :password WHERE id = :id";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':password', $passwordHash);
+        $stmt->bindValue(':id', $id);
+
+        return $stmt->execute();
+    }
+
+    public function eliminarConta($id)
+    {
+        $query = "DELETE FROM utilizadores WHERE id = :id";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':id', $id);
+
+        return $stmt->execute();
+    }
 }

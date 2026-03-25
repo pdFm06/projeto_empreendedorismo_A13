@@ -46,6 +46,7 @@ class AuthController extends Action
             session_regenerate_id(true);
             $_SESSION['id'] = $user['id'];
             $_SESSION['email'] = $user['email'];
+            $_SESSION['tema'] = $user['tema'] ?? 'light';
 
             Flash::set('success', 'Sessão iniciada com sucesso.');
             header('Location: /dashboard');
