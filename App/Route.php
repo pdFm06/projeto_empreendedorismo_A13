@@ -286,9 +286,29 @@ class Route extends Bootstrap {
             'action' => 'gerarRelatorioIa'
         );
 
+        $routes['criar_tarefa'] = array(
+            'route' => '/criar_tarefa',
+            'controller' => 'mainappController',
+            'action' => 'criarTarefa'
+        );
+
+        $routes['editar_tarefa'] = array(
+            'route' => '/editar_tarefa',
+            'controller' => 'mainappController',
+            'action' => 'editarTarefa'
+        );
+
+        $routes['eliminar_tarefa'] = array(
+            'route' => '/eliminar_tarefa',
+            'controller' => 'mainappController',
+            'action' => 'eliminarTarefa'
+        );
+
 
         $this->setRoutes($routes);
     }
+
+
 
 }
 

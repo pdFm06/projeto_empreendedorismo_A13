@@ -585,18 +585,22 @@ class MainappController extends Action
         $utilizador = Container::getModel('Utilizador');
         $equipa = Container::getModel('Equipa');
         $recurso = Container::getModel('Recurso');
+        $tarefa = Container::getModel('Tarefa');
+        $trabalhador = Container::getModel('Trabalhador');
 
         $projetos = $projeto->listarPorUtilizador($_SESSION['id']);
 
         foreach ($projetos as &$p) {
             $p['equipas'] = $projeto->listarEquipas($p['id']);
             $p['recursos'] = $recurso->listarPorProjeto($p['id']);
+            $p['tarefas'] = $tarefa->listarPorProjeto($p['id'], $_SESSION['id']);
         }
 
         $this->view->projetos = $projetos;
         $this->view->gestores = $utilizador->listarTodos();
         $this->view->equipasDisponiveis = $equipa->listarPorUtilizador($_SESSION['id']);
         $this->view->recursosDisponiveis = $recurso->listarPorUtilizador($_SESSION['id']);
+        $this->view->trabalhadores = $trabalhador->listarPorUtilizador($_SESSION['id']);
 
         $this->render('projetos', 'layout_dashboard');
     }
@@ -1387,6 +1391,131 @@ class MainappController extends Action
         }
 
         header('Location: /relatorios');
+        exit;
+    }
+
+    public function criarTarefa()
+    {
+        $this->validarAutenticacao();
+
+        $projetoId = $_POST['projeto_id'] ?? null;
+        $trabalhadorId = $_POST['trabalhador_id'] ?? null;
+        $titulo = trim($_POST['titulo'] ?? '');
+        $descricao = trim($_POST['descricao'] ?? '');
+        $estado = $_POST['estado'] ?? 'pendente';
+        $prioridade = $_POST['prioridade'] ?? 'media';
+        $dataLimite = $_POST['data_limite'] ?? null;
+
+        if (!$projetoId || $titulo === '') {
+            Flash::set('warning', 'O título da tarefa é obrigatório.');
+            header('Location: /projetos');
+            exit;
+        }
+
+        $projeto = Container::getModel('Projeto');
+        $projetoExistente = $projeto->obterPorIdEUtilizador($projetoId, $_SESSION['id']);
+
+        if (!$projetoExistente) {
+            Flash::set('danger', 'Não tem permissão para adicionar tarefas a este projeto.');
+            header('Location: /projetos');
+            exit;
+        }
+
+        if (!empty($trabalhadorId)) {
+            $trabalhador = Container::getModel('Trabalhador');
+            $trabalhadorExistente = $trabalhador->obterPorIdEUtilizador($trabalhadorId, $_SESSION['id']);
+
+            if (!$trabalhadorExistente) {
+                Flash::set('warning', 'Trabalhador inválido.');
+                header('Location: /projetos');
+                exit;
+            }
+        }
+
+        $tarefa = Container::getModel('Tarefa');
+        $tarefa->__set('projeto_id', $projetoId);
+        $tarefa->__set('trabalhador_id', $trabalhadorId ?: null);
+        $tarefa->__set('utilizador_id', $_SESSION['id']);
+        $tarefa->__set('titulo', $titulo);
+        $tarefa->__set('descricao', $descricao);
+        $tarefa->__set('estado', $estado);
+        $tarefa->__set('prioridade', $prioridade);
+        $tarefa->__set('data_limite', $dataLimite ?: null);
+
+        $tarefa->criar();
+
+        Flash::set('success', 'Tarefa criada com sucesso.');
+        header('Location: /projetos');
+        exit;
+    }
+
+    public function editarTarefa()
+    {
+        $this->validarAutenticacao();
+
+        $id = $_POST['id'] ?? null;
+        $trabalhadorId = $_POST['trabalhador_id'] ?? null;
+        $titulo = trim($_POST['titulo'] ?? '');
+        $descricao = trim($_POST['descricao'] ?? '');
+        $estado = $_POST['estado'] ?? 'pendente';
+        $prioridade = $_POST['prioridade'] ?? 'media';
+        $dataLimite = $_POST['data_limite'] ?? null;
+
+        if (!$id || $titulo === '') {
+            Flash::set('warning', 'A tarefa é inválida.');
+            header('Location: /projetos');
+            exit;
+        }
+
+        $tarefa = Container::getModel('Tarefa');
+        $tarefaExistente = $tarefa->obterPorIdEUtilizador($id, $_SESSION['id']);
+
+        if (!$tarefaExistente) {
+            Flash::set('danger', 'Não tem permissão para editar esta tarefa.');
+            header('Location: /projetos');
+            exit;
+        }
+
+        if (!empty($trabalhadorId)) {
+            $trabalhador = Container::getModel('Trabalhador');
+            $trabalhadorExistente = $trabalhador->obterPorIdEUtilizador($trabalhadorId, $_SESSION['id']);
+
+            if (!$trabalhadorExistente) {
+                Flash::set('warning', 'Trabalhador inválido.');
+                header('Location: /projetos');
+                exit;
+            }
+        }
+
+        $tarefa->__set('id', $id);
+        $tarefa->__set('trabalhador_id', $trabalhadorId ?: null);
+        $tarefa->__set('utilizador_id', $_SESSION['id']);
+        $tarefa->__set('titulo', $titulo);
+        $tarefa->__set('descricao', $descricao);
+        $tarefa->__set('estado', $estado);
+        $tarefa->__set('prioridade', $prioridade);
+        $tarefa->__set('data_limite', $dataLimite ?: null);
+
+        $tarefa->editar();
+
+        Flash::set('success', 'Tarefa atualizada com sucesso.');
+        header('Location: /projetos');
+        exit;
+    }
+
+    public function eliminarTarefa()
+    {
+        $this->validarAutenticacao();
+
+        $id = $_GET['id'] ?? null;
+
+        if ($id) {
+            $tarefa = Container::getModel('Tarefa');
+            $tarefa->eliminar($id, $_SESSION['id']);
+            Flash::set('success', 'Tarefa eliminada com sucesso.');
+        }
+
+        header('Location: /projetos');
         exit;
     }
 }
