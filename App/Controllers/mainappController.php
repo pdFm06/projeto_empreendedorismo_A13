@@ -856,4 +856,207 @@ class MainappController extends Action
         header('Location: /projetos');
         exit;
     }
+
+    private function exportarCsv($nomeFicheiro, $cabecalhos, $linhas)
+    {
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $nomeFicheiro . '"');
+
+        $output = fopen('php://output', 'w');
+
+        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+        fputcsv($output, $cabecalhos, ';');
+
+        foreach ($linhas as $linha) {
+            fputcsv($output, $linha, ';');
+        }
+
+        fclose($output);
+        exit;
+    }
+
+    public function relatorios()
+    {
+        $this->validarAutenticacao();
+
+        $projeto = Container::getModel('Projeto');
+        $trabalhador = Container::getModel('Trabalhador');
+        $equipa = Container::getModel('Equipa');
+        $recurso = Container::getModel('Recurso');
+
+        $projetos = $projeto->listarPorUtilizador($_SESSION['id']);
+        $trabalhadores = $trabalhador->listarPorUtilizador($_SESSION['id']);
+        $equipas = $equipa->listarPorUtilizador($_SESSION['id']);
+        $recursos = $recurso->listarPorUtilizador($_SESSION['id']);
+
+        $projetosEmExecucao = 0;
+        $projetosConcluidos = 0;
+        $orcamentoTotal = 0;
+        $trabalhadoresAtivos = 0;
+        $recursosBaixoStock = 0;
+        $recursosEsgotados = 0;
+
+        foreach ($projetos as $p) {
+            if (($p['estado'] ?? '') === 'em_execucao') {
+                $projetosEmExecucao++;
+            }
+
+            if (($p['estado'] ?? '') === 'concluido') {
+                $projetosConcluidos++;
+            }
+
+            $orcamentoTotal += (float)($p['orcamento'] ?? 0);
+        }
+
+        foreach ($trabalhadores as $t) {
+            if (($t['estado'] ?? '') === 'ativo') {
+                $trabalhadoresAtivos++;
+            }
+        }
+
+        foreach ($recursos as $r) {
+            $quantidade = (int)($r['quantidade'] ?? 0);
+
+            if ($quantidade === 0) {
+                $recursosEsgotados++;
+            } elseif ($quantidade <= 10) {
+                $recursosBaixoStock++;
+            }
+        }
+
+        $this->view->relatorio = [
+            'total_projetos' => count($projetos),
+            'projetos_em_execucao' => $projetosEmExecucao,
+            'projetos_concluidos' => $projetosConcluidos,
+            'orcamento_total' => $orcamentoTotal,
+            'total_trabalhadores' => count($trabalhadores),
+            'trabalhadores_ativos' => $trabalhadoresAtivos,
+            'total_equipas' => count($equipas),
+            'total_recursos' => count($recursos),
+            'recursos_baixo_stock' => $recursosBaixoStock,
+            'recursos_esgotados' => $recursosEsgotados
+        ];
+
+        $this->render('relatorios', 'layout_dashboard');
+    }
+
+    public function exportarProjetosCsv()
+    {
+        $this->validarAutenticacao();
+
+        $projeto = Container::getModel('Projeto');
+        $projetos = $projeto->listarPorUtilizador($_SESSION['id']);
+
+        $linhas = [];
+
+        foreach ($projetos as $p) {
+            $linhas[] = [
+                $p['id'] ?? '',
+                $p['nome'] ?? '',
+                $p['estado'] ?? '',
+                $p['localizacao'] ?? '',
+                $p['data_inicio'] ?? '',
+                $p['data_fim_prevista'] ?? '',
+                $p['orcamento'] ?? '',
+                $p['gestor_nome'] ?? ''
+            ];
+        }
+
+        $this->exportarCsv(
+            'projetos.csv',
+            ['ID', 'Nome', 'Estado', 'Localização', 'Data Início', 'Prazo', 'Orçamento', 'Responsável'],
+            $linhas
+        );
+    }
+
+    public function exportarEquipasCsv()
+    {
+        $this->validarAutenticacao();
+
+        $equipa = Container::getModel('Equipa');
+        $equipas = $equipa->listarPorUtilizador($_SESSION['id']);
+
+        $linhas = [];
+
+        foreach ($equipas as $e) {
+            $membros = $equipa->listarMembros($e['id']);
+
+            $nomesMembros = [];
+            foreach ($membros as $membro) {
+                $nomesMembros[] = $membro['nome'];
+            }
+
+            $linhas[] = [
+                $e['id'] ?? '',
+                $e['nome'] ?? '',
+                $e['especialidade'] ?? '',
+                $e['lider_nome'] ?? '',
+                $e['lider_funcao'] ?? '',
+                count($membros),
+                implode(', ', $nomesMembros)
+            ];
+        }
+
+        $this->exportarCsv(
+            'equipas.csv',
+            ['ID', 'Nome', 'Especialidade', 'Líder', 'Função do Líder', 'Nº de Membros', 'Membros'],
+            $linhas
+        );
+    }
+
+    public function exportarTrabalhadoresCsv()
+    {
+        $this->validarAutenticacao();
+
+        $trabalhador = Container::getModel('Trabalhador');
+        $trabalhadores = $trabalhador->listarPorUtilizador($_SESSION['id']);
+
+        $linhas = [];
+
+        foreach ($trabalhadores as $t) {
+            $linhas[] = [
+                $t['id'] ?? '',
+                $t['nome'] ?? '',
+                $t['email'] ?? '',
+                $t['telefone'] ?? '',
+                $t['funcao'] ?? '',
+                $t['salario_dia'] ?? '',
+                $t['estado'] ?? ''
+            ];
+        }
+
+        $this->exportarCsv(
+            'trabalhadores.csv',
+            ['ID', 'Nome', 'Email', 'Telefone', 'Função', 'Salário/Dia', 'Estado'],
+            $linhas
+        );
+    }
+    
+    public function exportarRecursosCsv()
+    {
+        $this->validarAutenticacao();
+
+        $recurso = Container::getModel('Recurso');
+        $recursos = $recurso->listarPorUtilizador($_SESSION['id']);
+
+        $linhas = [];
+
+        foreach ($recursos as $r) {
+            $linhas[] = [
+                $r['id'] ?? '',
+                $r['nome'] ?? '',
+                $r['tipo'] ?? '',
+                $r['quantidade'] ?? '',
+                $r['custo_unitario'] ?? '',
+                $r['estado'] ?? ''
+            ];
+        }
+
+        $this->exportarCsv(
+            'recursos.csv',
+            ['ID', 'Nome', 'Tipo', 'Quantidade', 'Custo Unitário', 'Estado'],
+            $linhas
+        );
+    }
 }

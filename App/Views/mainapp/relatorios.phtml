@@ -1,0 +1,225 @@
+<style>
+  .page-header h1 {
+    font-weight: 800;
+    margin-bottom: 0.35rem;
+  }
+
+  .subtitle {
+    color: #6b7280;
+    margin-bottom: 0;
+  }
+
+  .report-card {
+    background: #fff;
+    border-radius: 18px;
+    padding: 1.25rem;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+    height: 100%;
+  }
+
+  .metric-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #475569;
+    margin-bottom: 0.5rem;
+  }
+
+  .metric-number {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.1;
+  }
+
+  .metric-subtext {
+    margin-top: 0.4rem;
+    font-size: 0.92rem;
+    color: #64748b;
+  }
+
+  .section-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    color: #0f172a;
+  }
+
+  .export-btn {
+    border-radius: 12px;
+    font-weight: 600;
+  }
+
+  .muted {
+    color: #6b7280;
+  }
+
+  .ai-box {
+    border: 1px dashed rgba(13, 110, 253, 0.35);
+    background: rgba(13, 110, 253, 0.03);
+  }
+
+  footer {
+    color: #6b7280;
+    font-size: 0.9rem;
+    text-align: center;
+    margin-top: 2rem;
+  }
+</style>
+
+<div class="container py-4">
+  <div class="page-header">
+    <h1>Relatórios</h1>
+    <p class="subtitle">Resumo e exportação de dados da sua empresa</p>
+  </div>
+
+  <div class="row g-4 mt-1">
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="report-card">
+        <div class="metric-title">Projetos</div>
+        <div class="metric-number"><?= $this->view->relatorio['total_projetos'] ?></div>
+        <div class="metric-subtext">
+          Em execução: <?= $this->view->relatorio['projetos_em_execucao'] ?>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="report-card">
+        <div class="metric-title">Projetos concluídos</div>
+        <div class="metric-number"><?= $this->view->relatorio['projetos_concluidos'] ?></div>
+        <div class="metric-subtext">
+          Total concluído na sua empresa
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="report-card">
+        <div class="metric-title">Equipas</div>
+        <div class="metric-number"><?= $this->view->relatorio['total_equipas'] ?></div>
+        <div class="metric-subtext">
+          Equipas registadas
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="report-card">
+        <div class="metric-title">Trabalhadores</div>
+        <div class="metric-number"><?= $this->view->relatorio['total_trabalhadores'] ?></div>
+        <div class="metric-subtext">
+          Ativos: <?= $this->view->relatorio['trabalhadores_ativos'] ?>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="report-card">
+        <div class="metric-title">Recursos</div>
+        <div class="metric-number"><?= $this->view->relatorio['total_recursos'] ?></div>
+        <div class="metric-subtext">
+          Recursos registados na empresa
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="report-card">
+        <div class="metric-title">Baixo stock</div>
+        <div class="metric-number"><?= $this->view->relatorio['recursos_baixo_stock'] ?></div>
+        <div class="metric-subtext">
+          Quantidade entre 1 e 10
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="report-card">
+        <div class="metric-title">Recursos esgotados</div>
+        <div class="metric-number"><?= $this->view->relatorio['recursos_esgotados'] ?></div>
+        <div class="metric-subtext">
+          Quantidade igual a 0
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="report-card">
+        <div class="metric-title">Orçamento total dos projetos</div>
+        <div class="metric-number">
+          <?= number_format((float)$this->view->relatorio['orcamento_total'], 2, ',', '.') ?> €
+        </div>
+        <div class="metric-subtext">
+          Soma do orçamento dos projetos da sua empresa
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mt-1">
+    <div class="col-12 col-lg-7">
+      <div class="report-card">
+        <div class="section-title">Exportação de dados</div>
+
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <a href="/exportar_projetos_csv" class="btn btn-outline-primary export-btn w-100">
+              Exportar Projetos (CSV)
+            </a>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <a href="/exportar_equipas_csv" class="btn btn-outline-primary export-btn w-100">
+              Exportar Equipas (CSV)
+            </a>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <a href="/exportar_trabalhadores_csv" class="btn btn-outline-primary export-btn w-100">
+              Exportar Trabalhadores (CSV)
+            </a>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <a href="/exportar_recursos_csv" class="btn btn-outline-primary export-btn w-100">
+              Exportar Recursos (CSV)
+            </a>
+          </div>
+        </div>
+
+        <div class="muted mt-3" style="font-size:.92rem;">
+          Os ficheiros CSV são exportados apenas com os dados da sua empresa.
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-5">
+      <div class="report-card ai-box">
+        <div class="section-title">Relatório com IA</div>
+
+        <p class="muted mb-3">
+          Esta área fica preparada para uma futura funcionalidade de geração automática
+          de relatórios executivos com apoio de LLM.
+        </p>
+
+        <button class="btn btn-primary w-100 export-btn" type="button" disabled>
+          Gerar relatório com IA
+        </button>
+
+        <div class="muted mt-3" style="font-size:.92rem;">
+          Futuramente poderá incluir resumo executivo, riscos identificados,
+          alertas de stock e sugestões automáticas.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    © <span id="year"></span> Projeto Empreendedorismo — ISCTE ·
+    Desenvolvido pelo Grupo A13
+  </footer>
+</div>
+
+<script>
+  document.getElementById("year").textContent = new Date().getFullYear();
+</script>

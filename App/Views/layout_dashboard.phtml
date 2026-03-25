@@ -74,7 +74,6 @@ function isActive($paths, $uri) {
   </style>
 </head>
 <body>
-  <!-- Top bar for small screens -->
   <nav class="navbar bg-white border-bottom d-md-none">
     <div class="container-fluid">
       <button
@@ -91,7 +90,6 @@ function isActive($paths, $uri) {
   </nav>
 
   <div class="d-flex main-row">
-    <!-- Desktop sidebar -->
     <aside class="sidebar d-none d-md-block p-3 bg-white border-end shadow-sm flex-shrink-0">
       <div class="mb-4 pb-3 border-bottom">
         <div class="fw-bold text-primary">BuildManager</div>
@@ -121,15 +119,16 @@ function isActive($paths, $uri) {
         <li class="nav-item mb-1">
           <a href="/recursos" class="nav-link <?= isActive(['/recursos'], $uri) ?>">Recursos</a>
         </li>
+        <li class="nav-item mb-1">
+          <a href="/relatorios" class="nav-link <?= isActive(['/relatorios'], $uri) ?>">Relatórios</a>
+        </li>
         <li class="nav-item">
           <a href="#settings" class="nav-link <?= isActive(['/definicoes'], $uri) ?>">Definições</a>
         </li>
       </ul>
     </aside>
 
-    <!-- Área principal -->
     <main class="content-area flex-grow-1">
-      <!-- Mobile offcanvas sidebar -->
       <div class="offcanvas offcanvas-start" tabindex="-1" id="mobileSidebar" aria-labelledby="mobileSidebarLabel">
         <div class="offcanvas-header">
           <h5 class="offcanvas-title" id="mobileSidebarLabel">Menu</h5>
@@ -163,6 +162,9 @@ function isActive($paths, $uri) {
             </li>
             <li class="nav-item mb-1">
               <a href="/recursos" class="nav-link <?= isActive(['/recursos'], $uri) ?>">Recursos</a>
+            </li>
+            <li class="nav-item mb-1">
+              <a href="/relatorios" class="nav-link <?= isActive(['/relatorios'], $uri) ?>">Relatórios</a>
             </li>
             <li class="nav-item mt-3">
               <a href="#settings" class="nav-link <?= isActive(['/definicoes'], $uri) ?>">Definições</a>

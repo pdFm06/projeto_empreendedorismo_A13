@@ -242,6 +242,38 @@ class Route extends Bootstrap {
             'action' => 'removerRecursoProjeto'
         );
 
+        # Relatórios
+            
+        $routes['relatorios'] = array(
+            'route' => '/relatorios',
+            'controller' => 'mainappController',
+            'action' => 'relatorios'
+        );
+
+        $routes['exportar_projetos_csv'] = array(
+            'route' => '/exportar_projetos_csv',
+            'controller' => 'mainappController',
+            'action' => 'exportarProjetosCsv'
+        );
+
+        $routes['exportar_equipas_csv'] = array(
+            'route' => '/exportar_equipas_csv',
+            'controller' => 'mainappController',
+            'action' => 'exportarEquipasCsv'
+        );
+
+        $routes['exportar_trabalhadores_csv'] = array(
+            'route' => '/exportar_trabalhadores_csv',
+            'controller' => 'mainappController',
+            'action' => 'exportarTrabalhadoresCsv'
+        );
+
+        $routes['exportar_recursos_csv'] = array(
+            'route' => '/exportar_recursos_csv',
+            'controller' => 'mainappController',
+            'action' => 'exportarRecursosCsv'
+        );
+
 
         $this->setRoutes($routes);
     }
