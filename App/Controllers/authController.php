@@ -47,12 +47,14 @@ class AuthController extends Action
             $_SESSION['id'] = $user['id'];
             $_SESSION['email'] = $user['email'];
 
+            Flash::set('success', 'Sessão iniciada com sucesso.');
             header('Location: /dashboard');
             exit;
         }
 
-        $this->view->erro = 'E-mail ou palavra-passe incorretos.';
-        $this->render('login', 'layout1');
+        Flash::set('danger', 'E-mail ou palavra-passe incorretos.');
+        header('Location: /login');
+        exit;
     }
 
     public function logout()

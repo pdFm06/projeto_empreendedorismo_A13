@@ -114,17 +114,44 @@ class MainappController extends Action
     {
         $this->validarAutenticacao();
 
-        $equipa = Container::getModel('Equipa');
+        $nome = trim($_POST['nome'] ?? '');
+        $especialidade = trim($_POST['especialidade'] ?? '');
+        $liderId = $_POST['lider_id'] ?? null;
 
-        $equipa->__set('nome', $_POST['nome'] ?? '');
-        $equipa->__set('especialidade', $_POST['especialidade'] ?? '');
-        $equipa->__set('lider_id', $_POST['lider_id'] ?? null);
+        if ($nome === '') {
+            Flash::set('warning', 'O nome da equipa é obrigatório.');
+            header('Location: /equipas');
+            exit;
+        }
+
+        $equipa = Container::getModel('Equipa');
+        $trabalhador = Container::getModel('Trabalhador');
+
+        if (!empty($liderId)) {
+            $lider = $trabalhador->obterPorIdEUtilizador($liderId, $_SESSION['id']);
+
+            if (!$lider) {
+                Flash::set('warning', 'Líder inválido.');
+                header('Location: /equipas');
+                exit;
+            }
+
+            if (($lider['estado'] ?? '') !== 'ativo') {
+                Flash::set('warning', 'Só pode definir um trabalhador ativo como líder da equipa.');
+                header('Location: /equipas');
+                exit;
+            }
+        }
+
+        $equipa->__set('nome', $nome);
+        $equipa->__set('especialidade', $especialidade);
+        $equipa->__set('lider_id', $liderId ?: null);
         $equipa->__set('utilizador_id', $_SESSION['id']);
 
         $equipaId = $equipa->criar();
 
-        if ($equipaId && !empty($_POST['lider_id'])) {
-            $equipa->adicionarMembro($equipaId, $_POST['lider_id']);
+        if ($equipaId && !empty($liderId)) {
+            $equipa->adicionarMembro($equipaId, $liderId);
         }
 
         Flash::set('success', 'Equipa criada com sucesso.');
@@ -137,6 +164,9 @@ class MainappController extends Action
         $this->validarAutenticacao();
 
         $id = $_POST['id'] ?? null;
+        $nome = trim($_POST['nome'] ?? '');
+        $especialidade = trim($_POST['especialidade'] ?? '');
+        $liderId = $_POST['lider_id'] ?? null;
 
         if (!$id) {
             Flash::set('warning', 'Equipa inválida.');
@@ -144,29 +174,52 @@ class MainappController extends Action
             exit;
         }
 
-        $equipa = Container::getModel('Equipa');
-        $equipaExistente = $equipa->obterPorIdEUtilizador($id, $_SESSION['id']);
+        if ($nome === '') {
+            Flash::set('warning', 'O nome da equipa é obrigatório.');
+            header('Location: /equipas');
+            exit;
+        }
 
+        $equipa = Container::getModel('Equipa');
+        $trabalhador = Container::getModel('Trabalhador');
+
+        $equipaExistente = $equipa->obterPorIdEUtilizador($id, $_SESSION['id']);
         if (!$equipaExistente) {
             Flash::set('danger', 'Não tem permissão para editar esta equipa.');
             header('Location: /equipas');
             exit;
         }
 
+        if (!empty($liderId)) {
+            $lider = $trabalhador->obterPorIdEUtilizador($liderId, $_SESSION['id']);
+
+            if (!$lider) {
+                Flash::set('warning', 'Líder inválido.');
+                header('Location: /equipas');
+                exit;
+            }
+
+            if (($lider['estado'] ?? '') !== 'ativo') {
+                Flash::set('warning', 'Só pode definir um trabalhador ativo como líder da equipa.');
+                header('Location: /equipas');
+                exit;
+            }
+        }
+
         $equipa->__set('id', $id);
-        $equipa->__set('nome', $_POST['nome'] ?? '');
-        $equipa->__set('especialidade', $_POST['especialidade'] ?? '');
-        $equipa->__set('lider_id', $_POST['lider_id'] ?? null);
+        $equipa->__set('nome', $nome);
+        $equipa->__set('especialidade', $especialidade);
+        $equipa->__set('lider_id', $liderId ?: null);
         $equipa->__set('utilizador_id', $_SESSION['id']);
 
         $equipa->editar();
 
-        if (!empty($_POST['lider_id'])) {
+        if (!empty($liderId)) {
             $membros = $equipa->listarMembros($id);
             $idsMembros = array_column($membros, 'trabalhador_id');
 
-            if (!in_array((int) $_POST['lider_id'], array_map('intval', $idsMembros))) {
-                $equipa->adicionarMembro($id, $_POST['lider_id']);
+            if (!in_array((int)$liderId, array_map('intval', $idsMembros))) {
+                $equipa->adicionarMembro($id, $liderId);
             }
         }
 
@@ -364,14 +417,58 @@ class MainappController extends Action
     {
         $this->validarAutenticacao();
 
+        $nome = trim($_POST['nome'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $telefone = trim($_POST['telefone'] ?? '');
+        $funcao = trim($_POST['funcao'] ?? '');
+        $salarioDia = (float)($_POST['salario_dia'] ?? 0);
+        $estado = $_POST['estado'] ?? 'ativo';
+
+        if ($nome === '') {
+            Flash::set('warning', 'O nome do trabalhador é obrigatório.');
+            header('Location: /trabalhadores');
+            exit;
+        }
+
+        if ($email === '') {
+            Flash::set('warning', 'O email do trabalhador é obrigatório.');
+            header('Location: /trabalhadores');
+            exit;
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            Flash::set('warning', 'Introduza um email válido.');
+            header('Location: /trabalhadores');
+            exit;
+        }
+
+        if ($funcao === '') {
+            Flash::set('warning', 'A função do trabalhador é obrigatória.');
+            header('Location: /trabalhadores');
+            exit;
+        }
+
+        if ($salarioDia <= 0) {
+            Flash::set('warning', 'O salário por dia tem de ser superior a 0.');
+            header('Location: /trabalhadores');
+            exit;
+        }
+
         $trabalhador = Container::getModel('Trabalhador');
 
-        $trabalhador->__set('nome', $_POST['nome'] ?? '');
-        $trabalhador->__set('email', $_POST['email'] ?? '');
-        $trabalhador->__set('telefone', $_POST['telefone'] ?? '');
-        $trabalhador->__set('funcao', $_POST['funcao'] ?? '');
-        $trabalhador->__set('salario_dia', $_POST['salario_dia'] ?? 0);
-        $trabalhador->__set('estado', $_POST['estado'] ?? 'ativo');
+        $duplicado = $trabalhador->obterPorEmailEUtilizador($email, $_SESSION['id']);
+        if ($duplicado) {
+            Flash::set('warning', 'Já existe um trabalhador com esse email na sua empresa.');
+            header('Location: /trabalhadores');
+            exit;
+        }
+
+        $trabalhador->__set('nome', $nome);
+        $trabalhador->__set('email', $email);
+        $trabalhador->__set('telefone', $telefone);
+        $trabalhador->__set('funcao', $funcao);
+        $trabalhador->__set('salario_dia', $salarioDia);
+        $trabalhador->__set('estado', $estado);
         $trabalhador->__set('utilizador_id', $_SESSION['id']);
 
         $trabalhador->criar();
@@ -392,6 +489,43 @@ class MainappController extends Action
             exit;
         }
 
+        $nome = trim($_POST['nome'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $telefone = trim($_POST['telefone'] ?? '');
+        $funcao = trim($_POST['funcao'] ?? '');
+        $salarioDia = (float)($_POST['salario_dia'] ?? 0);
+        $estado = $_POST['estado'] ?? 'ativo';
+
+        if ($nome === '') {
+            Flash::set('warning', 'O nome do trabalhador é obrigatório.');
+            header('Location: /trabalhadores');
+            exit;
+        }
+
+        if ($email === '') {
+            Flash::set('warning', 'O email do trabalhador é obrigatório.');
+            header('Location: /trabalhadores');
+            exit;
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            Flash::set('warning', 'Introduza um email válido.');
+            header('Location: /trabalhadores');
+            exit;
+        }
+
+        if ($funcao === '') {
+            Flash::set('warning', 'A função do trabalhador é obrigatória.');
+            header('Location: /trabalhadores');
+            exit;
+        }
+
+        if ($salarioDia <= 0) {
+            Flash::set('warning', 'O salário por dia tem de ser superior a 0.');
+            header('Location: /trabalhadores');
+            exit;
+        }
+
         $trabalhador = Container::getModel('Trabalhador');
         $trabalhadorExistente = $trabalhador->obterPorIdEUtilizador($id, $_SESSION['id']);
 
@@ -401,13 +535,20 @@ class MainappController extends Action
             exit;
         }
 
+        $duplicado = $trabalhador->obterPorEmailEUtilizadorExcetoId($email, $_SESSION['id'], $id);
+        if ($duplicado) {
+            Flash::set('warning', 'Já existe outro trabalhador com esse email na sua empresa.');
+            header('Location: /trabalhadores');
+            exit;
+        }
+
         $trabalhador->__set('id', $id);
-        $trabalhador->__set('nome', $_POST['nome'] ?? '');
-        $trabalhador->__set('email', $_POST['email'] ?? '');
-        $trabalhador->__set('telefone', $_POST['telefone'] ?? '');
-        $trabalhador->__set('funcao', $_POST['funcao'] ?? '');
-        $trabalhador->__set('salario_dia', $_POST['salario_dia'] ?? 0);
-        $trabalhador->__set('estado', $_POST['estado'] ?? 'ativo');
+        $trabalhador->__set('nome', $nome);
+        $trabalhador->__set('email', $email);
+        $trabalhador->__set('telefone', $telefone);
+        $trabalhador->__set('funcao', $funcao);
+        $trabalhador->__set('salario_dia', $salarioDia);
+        $trabalhador->__set('estado', $estado);
         $trabalhador->__set('utilizador_id', $_SESSION['id']);
 
         $trabalhador->editar();
@@ -462,21 +603,35 @@ class MainappController extends Action
     {
         $this->validarAutenticacao();
 
-        if (empty(trim($_POST['nome'] ?? ''))) {
+        $nome = trim($_POST['nome'] ?? '');
+        $descricao = trim($_POST['descricao'] ?? '');
+        $localizacao = trim($_POST['localizacao'] ?? '');
+        $dataInicio = $_POST['data_inicio'] ?? null;
+        $dataFimPrevista = $_POST['data_fim_prevista'] ?? null;
+        $estado = $_POST['estado'] ?? 'planeado';
+        $orcamento = (float)($_POST['orcamento'] ?? 0);
+
+        if ($nome === '') {
             Flash::set('warning', 'O nome do projeto é obrigatório.');
+            header('Location: /projetos');
+            exit;
+        }
+
+        if ($orcamento <= 0) {
+            Flash::set('warning', 'O orçamento tem de ser superior a 0.');
             header('Location: /projetos');
             exit;
         }
 
         $projeto = Container::getModel('Projeto');
 
-        $projeto->__set('nome', $_POST['nome'] ?? '');
-        $projeto->__set('descricao', $_POST['descricao'] ?? '');
-        $projeto->__set('localizacao', $_POST['localizacao'] ?? '');
-        $projeto->__set('data_inicio', $_POST['data_inicio'] ?? null);
-        $projeto->__set('data_fim_prevista', $_POST['data_fim_prevista'] ?? null);
-        $projeto->__set('estado', $_POST['estado'] ?? 'planeado');
-        $projeto->__set('orcamento', $_POST['orcamento'] ?? 0);
+        $projeto->__set('nome', $nome);
+        $projeto->__set('descricao', $descricao);
+        $projeto->__set('localizacao', $localizacao);
+        $projeto->__set('data_inicio', $dataInicio);
+        $projeto->__set('data_fim_prevista', $dataFimPrevista);
+        $projeto->__set('estado', $estado);
+        $projeto->__set('orcamento', $orcamento);
         $projeto->__set('gestor_id', $_SESSION['id']);
         $projeto->__set('utilizador_id', $_SESSION['id']);
 
@@ -495,6 +650,13 @@ class MainappController extends Action
         $this->validarAutenticacao();
 
         $id = $_POST['id'] ?? null;
+        $nome = trim($_POST['nome'] ?? '');
+        $descricao = trim($_POST['descricao'] ?? '');
+        $localizacao = trim($_POST['localizacao'] ?? '');
+        $dataInicio = $_POST['data_inicio'] ?? null;
+        $dataFimPrevista = $_POST['data_fim_prevista'] ?? null;
+        $estado = $_POST['estado'] ?? 'planeado';
+        $orcamento = (float)($_POST['orcamento'] ?? 0);
 
         if (!$id) {
             Flash::set('warning', 'Projeto inválido.');
@@ -502,8 +664,14 @@ class MainappController extends Action
             exit;
         }
 
-        if (empty(trim($_POST['nome'] ?? ''))) {
+        if ($nome === '') {
             Flash::set('warning', 'O nome do projeto é obrigatório.');
+            header('Location: /projetos');
+            exit;
+        }
+
+        if ($orcamento <= 0) {
+            Flash::set('warning', 'O orçamento tem de ser superior a 0.');
             header('Location: /projetos');
             exit;
         }
@@ -520,13 +688,13 @@ class MainappController extends Action
         $projeto->__set('id', $id);
         $projeto->__set('gestor_id', $_SESSION['id']);
         $projeto->__set('utilizador_id', $_SESSION['id']);
-        $projeto->__set('nome', $_POST['nome'] ?? '');
-        $projeto->__set('descricao', $_POST['descricao'] ?? '');
-        $projeto->__set('localizacao', $_POST['localizacao'] ?? '');
-        $projeto->__set('data_inicio', $_POST['data_inicio'] ?? null);
-        $projeto->__set('data_fim_prevista', $_POST['data_fim_prevista'] ?? null);
-        $projeto->__set('estado', $_POST['estado'] ?? 'planeado');
-        $projeto->__set('orcamento', $_POST['orcamento'] ?? 0);
+        $projeto->__set('nome', $nome);
+        $projeto->__set('descricao', $descricao);
+        $projeto->__set('localizacao', $localizacao);
+        $projeto->__set('data_inicio', $dataInicio);
+        $projeto->__set('data_fim_prevista', $dataFimPrevista);
+        $projeto->__set('estado', $estado);
+        $projeto->__set('orcamento', $orcamento);
 
         if ($projeto->editar()) {
             Flash::set('success', 'Projeto atualizado com sucesso.');

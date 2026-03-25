@@ -195,7 +195,10 @@
                   <?php
                     $haTrabalhadoresDisponiveis = false;
                     foreach ($this->view->trabalhadores as $trabalhador) {
-                      if (!in_array($trabalhador['id'], $membrosIds)) {
+                      if (
+                        !in_array($trabalhador['id'], $membrosIds) &&
+                        (int)$trabalhador['id'] !== (int)$equipa['lider_id']
+                      ) {
                         $haTrabalhadoresDisponiveis = true;
                   ?>
                         <option value="<?= $trabalhador['id'] ?>">

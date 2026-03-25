@@ -131,4 +131,42 @@ class Trabalhador extends Model
 
         return $stmt->execute();
     }
+
+    public function obterPorEmailEUtilizador($email, $utilizadorId)
+    {
+        $query = "
+            SELECT *
+            FROM trabalhadores
+            WHERE email = :email
+            AND utilizador_id = :utilizador_id
+            LIMIT 1
+        ";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':email', $email);
+        $stmt->bindValue(':utilizador_id', $utilizadorId);
+        $stmt->execute();
+
+        return $stmt->fetch(\PDO::FETCH_ASSOC);
+    }
+
+    public function obterPorEmailEUtilizadorExcetoId($email, $utilizadorId, $id)
+    {
+        $query = "
+            SELECT *
+            FROM trabalhadores
+            WHERE email = :email
+            AND utilizador_id = :utilizador_id
+            AND id <> :id
+            LIMIT 1
+        ";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':email', $email);
+        $stmt->bindValue(':utilizador_id', $utilizadorId);
+        $stmt->bindValue(':id', $id);
+        $stmt->execute();
+
+        return $stmt->fetch(\PDO::FETCH_ASSOC);
+    }
 }
