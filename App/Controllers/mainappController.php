@@ -1203,4 +1203,190 @@ class MainappController extends Action
         $dompdf->stream('relatorio_geral.pdf', ['Attachment' => true]);
         exit;
     }
+
+
+    private function lerConfiguracaoOpenAI()
+    {
+        $config = [];
+
+        $caminho = dirname(__DIR__, 2) . '/API_KEY.env';
+
+        if (file_exists($caminho)) {
+            $linhas = file($caminho, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
+            foreach ($linhas as $linha) {
+                $linha = trim($linha);
+
+                if ($linha === '' || strpos($linha, '#') === 0) {
+                    continue;
+                }
+
+                if (strpos($linha, '=') !== false) {
+                    [$chave, $valor] = explode('=', $linha, 2);
+                    $config[trim($chave)] = trim($valor);
+                }
+            }
+        }
+
+        return $config;
+    }
+    private function chamarOpenAI($prompt)
+    {
+        $config = $this->lerConfiguracaoOpenAI();
+
+        $apiKey = $config['OPENAI_API_KEY'] ?? null;
+        $model = $config['OPENAI_MODEL'] ?? 'gpt-5.4';
+
+        if (!$apiKey || trim($apiKey) === '') {
+            throw new \Exception('OPENAI_API_KEY não configurada.');
+        }
+
+        $payload = [
+            'model' => $model,
+            'input' => [
+                [
+                    'role' => 'system',
+                    'content' => [
+                        [
+                            'type' => 'input_text',
+                            'text' => 'És um assistente empresarial. Escreve relatórios executivos curtos, claros e profissionais em português de Portugal. Não inventes dados. Usa apenas os dados fornecidos.'
+                        ]
+                    ]
+                ],
+                [
+                    'role' => 'user',
+                    'content' => [
+                        [
+                            'type' => 'input_text',
+                            'text' => $prompt
+                        ]
+                    ]
+                ]
+            ]
+        ];
+
+        $ch = curl_init('https://api.openai.com/v1/responses');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'Authorization: Bearer ' . $apiKey
+        ]);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload, JSON_UNESCAPED_UNICODE));
+
+        $response = curl_exec($ch);
+
+        if ($response === false) {
+            $erro = curl_error($ch);
+            curl_close($ch);
+            throw new \Exception('Erro cURL: ' . $erro);
+        }
+
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        $data = json_decode($response, true);
+
+        if ($httpCode >= 400) {
+            $mensagem = $data['error']['message'] ?? 'Erro desconhecido na API.';
+            throw new \Exception($mensagem);
+        }
+
+        if (!empty($data['output_text'])) {
+            return trim($data['output_text']);
+        }
+
+        if (!empty($data['output'][0]['content'][0]['text'])) {
+            return trim($data['output'][0]['content'][0]['text']);
+        }
+
+        throw new \Exception('Não foi possível ler a resposta da OpenAI.');
+    }
+
+    public function gerarRelatorioIa()
+    {
+        $this->validarAutenticacao();
+
+        $projeto = \MF\Model\Container::getModel('Projeto');
+        $trabalhador = \MF\Model\Container::getModel('Trabalhador');
+        $equipa = \MF\Model\Container::getModel('Equipa');
+        $recurso = \MF\Model\Container::getModel('Recurso');
+
+        $projetos = $projeto->listarPorUtilizador($_SESSION['id']);
+        $trabalhadores = $trabalhador->listarPorUtilizador($_SESSION['id']);
+        $equipas = $equipa->listarPorUtilizador($_SESSION['id']);
+        $recursos = $recurso->listarPorUtilizador($_SESSION['id']);
+
+        $projetosEmExecucao = 0;
+        $projetosConcluidos = 0;
+        $orcamentoTotal = 0;
+        $trabalhadoresAtivos = 0;
+        $trabalhadoresInativos = 0;
+        $recursosBaixoStock = 0;
+        $recursosEsgotados = 0;
+
+        foreach ($projetos as $p) {
+            if (($p['estado'] ?? '') === 'em_execucao') {
+                $projetosEmExecucao++;
+            }
+            if (($p['estado'] ?? '') === 'concluido') {
+                $projetosConcluidos++;
+            }
+            $orcamentoTotal += (float)($p['orcamento'] ?? 0);
+        }
+
+        foreach ($trabalhadores as $t) {
+            if (($t['estado'] ?? '') === 'ativo') {
+                $trabalhadoresAtivos++;
+            } else {
+                $trabalhadoresInativos++;
+            }
+        }
+
+        foreach ($recursos as $r) {
+            $quantidade = (int)($r['quantidade'] ?? 0);
+            if ($quantidade === 0) {
+                $recursosEsgotados++;
+            } elseif ($quantidade <= 10) {
+                $recursosBaixoStock++;
+            }
+        }
+
+        $nomesProjetos = [];
+        foreach ($projetos as $p) {
+            $nomesProjetos[] = ($p['nome'] ?? 'Sem nome') . ' [' . ($p['estado'] ?? 'sem estado') . ']';
+        }
+
+        $prompt = "Gera um relatório executivo curto, profissional e objetivo para a empresa associada ao utilizador autenticado.\n\n"
+            . "Dados da empresa:\n"
+            . "- Total de projetos: " . count($projetos) . "\n"
+            . "- Projetos em execução: " . $projetosEmExecucao . "\n"
+            . "- Projetos concluídos: " . $projetosConcluidos . "\n"
+            . "- Orçamento total dos projetos: " . number_format((float)$orcamentoTotal, 2, '.', '') . " EUR\n"
+            . "- Total de equipas: " . count($equipas) . "\n"
+            . "- Total de trabalhadores: " . count($trabalhadores) . "\n"
+            . "- Trabalhadores ativos: " . $trabalhadoresAtivos . "\n"
+            . "- Trabalhadores inativos: " . $trabalhadoresInativos . "\n"
+            . "- Total de recursos: " . count($recursos) . "\n"
+            . "- Recursos com baixo stock: " . $recursosBaixoStock . "\n"
+            . "- Recursos esgotados: " . $recursosEsgotados . "\n"
+            . "- Projetos registados: " . (empty($nomesProjetos) ? 'Nenhum' : implode('; ', $nomesProjetos)) . "\n\n"
+            . "Estrutura do relatório:\n"
+            . "1. Resumo executivo\n"
+            . "2. Pontos positivos\n"
+            . "3. Riscos ou alertas\n"
+            . "4. Prioridades recomendadas\n\n"
+            . "Não inventes números nem factos que não estejam nos dados.";
+
+        try {
+            $texto = $this->chamarOpenAI($prompt);
+            $_SESSION['relatorio_ia'] = $texto;
+            \App\Lib\Flash::set('success', 'Relatório com IA gerado com sucesso.');
+        } catch (\Exception $e) {
+            \App\Lib\Flash::set('danger', 'Não foi possível gerar o relatório com IA: ' . $e->getMessage());
+        }
+
+        header('Location: /relatorios');
+        exit;
+    }
 }

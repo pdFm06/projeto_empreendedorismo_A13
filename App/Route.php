@@ -280,6 +280,12 @@ class Route extends Bootstrap {
             'action' => 'exportarRelatorioPdf'
         );
 
+        $routes['gerar_relatorio_ia'] = array(
+            'route' => '/gerar_relatorio_ia',
+            'controller' => 'mainappController',
+            'action' => 'gerarRelatorioIa'
+        );
+
 
         $this->setRoutes($routes);
     }

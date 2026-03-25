@@ -58,6 +58,13 @@
     background: rgba(13, 110, 253, 0.03);
   }
 
+  .ai-result {
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 14px;
+    white-space: pre-wrap;
+  }
+
   footer {
     color: #6b7280;
     font-size: 0.9rem;
@@ -185,18 +192,16 @@
               Exportar Recursos (CSV)
             </a>
           </div>
-        </div>
 
-        <div class="row" style="margin-top: 15px;">
           <div class="col-12 col-md-6">
-              <a href="/exportar_relatorio_pdf" class="btn btn-outline-danger export-btn w-100">
-                  Exportar Relatório Geral (PDF)
-              </a>
+            <a href="/exportar_relatorio_pdf" class="btn btn-outline-danger export-btn w-100">
+              Exportar Relatório Geral (PDF)
+            </a>
           </div>
         </div>
-  
+
         <div class="muted mt-3" style="font-size:.92rem;">
-          Os ficheiros CSV são exportados apenas com os dados da sua empresa.
+          Os ficheiros exportados incluem apenas os dados da sua empresa.
         </div>
       </div>
     </div>
@@ -206,18 +211,26 @@
         <div class="section-title">Relatório com IA</div>
 
         <p class="muted mb-3">
-          Esta área fica preparada para uma futura funcionalidade de geração automática
-          de relatórios executivos com apoio de LLM.
+          Gere um resumo executivo automático com base nos dados atuais da sua empresa.
         </p>
 
-        <button class="btn btn-primary w-100 export-btn" type="button" disabled>
-          Gerar relatório com IA
-        </button>
+        <form method="post" action="/gerar_relatorio_ia">
+          <button class="btn btn-primary w-100 export-btn" type="submit">
+            Gerar relatório com IA
+          </button>
+        </form>
 
         <div class="muted mt-3" style="font-size:.92rem;">
-          Futuramente poderá incluir resumo executivo, riscos identificados,
-          alertas de stock e sugestões automáticas.
+          O relatório inclui resumo executivo, pontos positivos, riscos identificados
+          e prioridades recomendadas.
         </div>
+
+        <?php if (!empty($_SESSION['relatorio_ia'])) { ?>
+          <div class="ai-result mt-4 p-3">
+            <div class="fw-bold mb-2">Relatório gerado pela IA</div>
+            <?= nl2br(htmlspecialchars($_SESSION['relatorio_ia'])) ?>
+          </div>
+        <?php } ?>
       </div>
     </div>
   </div>
