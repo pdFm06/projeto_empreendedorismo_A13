@@ -34,37 +34,125 @@ class MainappController extends Action
         $equipas = $equipa->listarPorUtilizador($_SESSION['id']);
         $recursos = $recurso->listarPorUtilizador($_SESSION['id']);
 
+        $tarefas = [];
+        try {
+            $tarefa = Container::getModel('Tarefa');
+            if (method_exists($tarefa, 'listarPorUtilizador')) {
+                $tarefas = $tarefa->listarPorUtilizador($_SESSION['id']);
+            }
+        } catch (\Throwable $e) {
+            $tarefas = [];
+        }
+
         $totalProjetos = count($projetos);
         $projetosEmExecucao = 0;
         $projetosConcluidos = 0;
         $orcamentoTotal = 0;
 
+        $projetosPorEstado = [
+            'planeado' => 0,
+            'em_execucao' => 0,
+            'concluido' => 0,
+            'suspenso' => 0
+        ];
+
+        $topProjetosOrcamento = [];
+
+        $projetosPorTrimestre = [];
+        $orcamentoPorTrimestre = [];
+        $projetosPorSemestre = [];
+        $orcamentoPorSemestre = [];
+
         foreach ($projetos as $p) {
-            if (($p['estado'] ?? '') === 'em_execucao') {
+            $estado = $p['estado'] ?? '';
+
+            if ($estado === 'em_execucao') {
                 $projetosEmExecucao++;
             }
 
-            if (($p['estado'] ?? '') === 'concluido') {
+            if ($estado === 'concluido') {
                 $projetosConcluidos++;
             }
 
-            $orcamentoTotal += (float)($p['orcamento'] ?? 0);
+            if (isset($projetosPorEstado[$estado])) {
+                $projetosPorEstado[$estado]++;
+            }
+
+            $orcamento = (float)($p['orcamento'] ?? 0);
+            $orcamentoTotal += $orcamento;
+
+            $topProjetosOrcamento[] = [
+                'nome' => $p['nome'] ?? 'Sem nome',
+                'orcamento' => $orcamento
+            ];
+
+            $dataInicio = $p['data_inicio'] ?? null;
+            if (!empty($dataInicio) && $dataInicio !== '0000-00-00') {
+                $timestamp = strtotime($dataInicio);
+
+                if ($timestamp) {
+                    $ano = date('Y', $timestamp);
+                    $mes = (int) date('n', $timestamp);
+
+                    $trimestre = (int) ceil($mes / 3);
+                    $semestre = $mes <= 6 ? 1 : 2;
+
+                    $chaveTri = $ano . '-T' . $trimestre;
+                    $chaveSem = $ano . '-S' . $semestre;
+
+                    if (!isset($projetosPorTrimestre[$chaveTri])) {
+                        $projetosPorTrimestre[$chaveTri] = 0;
+                        $orcamentoPorTrimestre[$chaveTri] = 0;
+                    }
+
+                    if (!isset($projetosPorSemestre[$chaveSem])) {
+                        $projetosPorSemestre[$chaveSem] = 0;
+                        $orcamentoPorSemestre[$chaveSem] = 0;
+                    }
+
+                    $projetosPorTrimestre[$chaveTri]++;
+                    $orcamentoPorTrimestre[$chaveTri] += $orcamento;
+
+                    $projetosPorSemestre[$chaveSem]++;
+                    $orcamentoPorSemestre[$chaveSem] += $orcamento;
+                }
+            }
         }
+
+        ksort($projetosPorTrimestre);
+        ksort($orcamentoPorTrimestre);
+        ksort($projetosPorSemestre);
+        ksort($orcamentoPorSemestre);
+
+        usort($topProjetosOrcamento, function ($a, $b) {
+            return $b['orcamento'] <=> $a['orcamento'];
+        });
+
+        $topProjetosOrcamento = array_slice($topProjetosOrcamento, 0, 5);
 
         $totalTrabalhadores = count($trabalhadores);
         $trabalhadoresAtivos = 0;
+        $trabalhadoresInativos = 0;
+        $salarioTotalDiario = 0;
 
         foreach ($trabalhadores as $t) {
             if (($t['estado'] ?? '') === 'ativo') {
                 $trabalhadoresAtivos++;
+            } else {
+                $trabalhadoresInativos++;
             }
+
+            $salarioTotalDiario += (float)($t['salario_dia'] ?? 0);
         }
+
+        $salarioMedioDiario = $totalTrabalhadores > 0 ? ($salarioTotalDiario / $totalTrabalhadores) : 0;
 
         $totalEquipas = count($equipas);
 
         $totalRecursos = count($recursos);
         $recursosBaixoStock = 0;
         $recursosEsgotados = 0;
+        $recursosStockNormal = 0;
 
         foreach ($recursos as $r) {
             $quantidade = (int)($r['quantidade'] ?? 0);
@@ -73,6 +161,33 @@ class MainappController extends Action
                 $recursosEsgotados++;
             } elseif ($quantidade <= 10) {
                 $recursosBaixoStock++;
+            } else {
+                $recursosStockNormal++;
+            }
+        }
+
+        $tarefasPorEstado = [
+            'pendente' => 0,
+            'em_progresso' => 0,
+            'concluida' => 0
+        ];
+
+        $tarefasPorPrioridade = [
+            'baixa' => 0,
+            'media' => 0,
+            'alta' => 0
+        ];
+
+        foreach ($tarefas as $tarefa) {
+            $estado = $tarefa['estado'] ?? '';
+            $prioridade = $tarefa['prioridade'] ?? '';
+
+            if (isset($tarefasPorEstado[$estado])) {
+                $tarefasPorEstado[$estado]++;
+            }
+
+            if (isset($tarefasPorPrioridade[$prioridade])) {
+                $tarefasPorPrioridade[$prioridade]++;
             }
         }
 
@@ -83,10 +198,70 @@ class MainappController extends Action
             'orcamento_total' => $orcamentoTotal,
             'total_trabalhadores' => $totalTrabalhadores,
             'trabalhadores_ativos' => $trabalhadoresAtivos,
+            'trabalhadores_inativos' => $trabalhadoresInativos,
+            'salario_medio_diario' => $salarioMedioDiario,
             'total_equipas' => $totalEquipas,
             'total_recursos' => $totalRecursos,
             'recursos_baixo_stock' => $recursosBaixoStock,
-            'recursos_esgotados' => $recursosEsgotados
+            'recursos_esgotados' => $recursosEsgotados,
+            'recursos_stock_normal' => $recursosStockNormal,
+            'total_tarefas' => count($tarefas),
+
+            'graficos' => [
+                'projetos_por_estado' => [
+                    'labels' => ['Planeado', 'Em execução', 'Concluído', 'Suspenso'],
+                    'values' => [
+                        $projetosPorEstado['planeado'],
+                        $projetosPorEstado['em_execucao'],
+                        $projetosPorEstado['concluido'],
+                        $projetosPorEstado['suspenso']
+                    ]
+                ],
+                'tarefas_por_estado' => [
+                    'labels' => ['Pendente', 'Em progresso', 'Concluída'],
+                    'values' => [
+                        $tarefasPorEstado['pendente'],
+                        $tarefasPorEstado['em_progresso'],
+                        $tarefasPorEstado['concluida']
+                    ]
+                ],
+                'tarefas_por_prioridade' => [
+                    'labels' => ['Baixa', 'Média', 'Alta'],
+                    'values' => [
+                        $tarefasPorPrioridade['baixa'],
+                        $tarefasPorPrioridade['media'],
+                        $tarefasPorPrioridade['alta']
+                    ]
+                ],
+                'recursos_por_stock' => [
+                    'labels' => ['Stock normal', 'Baixo stock', 'Esgotados'],
+                    'values' => [
+                        $recursosStockNormal,
+                        $recursosBaixoStock,
+                        $recursosEsgotados
+                    ]
+                ],
+                'top_projetos_orcamento' => [
+                    'labels' => array_map(function ($item) {
+                        return $item['nome'];
+                    }, $topProjetosOrcamento),
+                    'values' => array_map(function ($item) {
+                        return $item['orcamento'];
+                    }, $topProjetosOrcamento)
+                ],
+                'temporais' => [
+                    'trimestre' => [
+                        'labels' => array_keys($projetosPorTrimestre),
+                        'projetos' => array_values($projetosPorTrimestre),
+                        'orcamento' => array_values($orcamentoPorTrimestre)
+                    ],
+                    'semestre' => [
+                        'labels' => array_keys($projetosPorSemestre),
+                        'projetos' => array_values($projetosPorSemestre),
+                        'orcamento' => array_values($orcamentoPorSemestre)
+                    ]
+                ]
+            ]
         ];
 
         $this->render('dashboard', 'layout_dashboard');
@@ -1616,27 +1791,27 @@ class MainappController extends Action
     }
 
     public function ativarMfa()
-    {
-        $this->validarAutenticacao();
+{
+    $this->validarAutenticacao();
 
-        $utilizador = Container::getModel('Utilizador');
-        $utilizador->atualizarEstadoMfa($_SESSION['id'], 1);
+    $utilizador = Container::getModel('Utilizador');
+    $utilizador->atualizarEstadoMfa($_SESSION['id'], 1);
 
-        Flash::set('success', 'MFA ativada com sucesso.');
-        header('Location: /definicoes');
-        exit;
-    }
+    Flash::set('success', 'MFA ativada com sucesso.');
+    header('Location: /definicoes');
+    exit;
+}
 
-    public function desativarMfa()
-    {
-        $this->validarAutenticacao();
+public function desativarMfa()
+{
+    $this->validarAutenticacao();
 
-        $utilizador = Container::getModel('Utilizador');
-        $utilizador->atualizarEstadoMfa($_SESSION['id'], 0);
-        $utilizador->limparCodigoMfa($_SESSION['id']);
+    $utilizador = Container::getModel('Utilizador');
+    $utilizador->atualizarEstadoMfa($_SESSION['id'], 0);
+    $utilizador->limparCodigoMfa($_SESSION['id']);
 
-        Flash::set('success', 'MFA desativada com sucesso.');
-        header('Location: /definicoes');
-        exit;
-    }
+    Flash::set('success', 'MFA desativada com sucesso.');
+    header('Location: /definicoes');
+    exit;
+}
 }

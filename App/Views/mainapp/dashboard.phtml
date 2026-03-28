@@ -39,6 +39,41 @@
     color: var(--text-muted, #64748b);
   }
 
+  .chart-card {
+    background: var(--bg-surface, #fff);
+    color: var(--text-main, #111827);
+    border-radius: 18px;
+    padding: 1.25rem;
+    box-shadow: var(--shadow-soft, 0 8px 30px rgba(0,0,0,0.06));
+    height: 100%;
+  }
+
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .chart-title {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--text-main, #111827);
+    margin-bottom: 0;
+  }
+
+  .chart-type-select {
+    max-width: 180px;
+    min-width: 120px;
+  }
+
+  .chart-wrap {
+    position: relative;
+    height: 320px;
+  }
+
   footer {
     color: var(--text-muted, #6b7280);
     font-size: 0.9rem;
@@ -94,19 +129,19 @@
       </div>
     </div>
 
-    <div class="col-12 col-md-6 col-lg-4">
+    <div class="col-12 col-md-6 col-lg-3">
       <div class="dashboard-card">
         <div class="dashboard-title">Recursos</div>
         <div class="dashboard-number"><?= $this->view->dashboard['total_recursos'] ?></div>
         <div class="dashboard-subtext">
-          Recursos registados na sua empresa
+          Registados na sua empresa
         </div>
       </div>
     </div>
 
-    <div class="col-12 col-md-6 col-lg-4">
+    <div class="col-12 col-md-6 col-lg-3">
       <div class="dashboard-card">
-        <div class="dashboard-title">Recursos com baixo stock</div>
+        <div class="dashboard-title">Baixo stock</div>
         <div class="dashboard-number"><?= $this->view->dashboard['recursos_baixo_stock'] ?></div>
         <div class="dashboard-subtext">
           Quantidade entre 1 e 10
@@ -114,7 +149,7 @@
       </div>
     </div>
 
-    <div class="col-12 col-md-6 col-lg-4">
+    <div class="col-12 col-md-6 col-lg-3">
       <div class="dashboard-card">
         <div class="dashboard-title">Recursos esgotados</div>
         <div class="dashboard-number"><?= $this->view->dashboard['recursos_esgotados'] ?></div>
@@ -124,7 +159,17 @@
       </div>
     </div>
 
-    <div class="col-12">
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="dashboard-card">
+        <div class="dashboard-title">Tarefas</div>
+        <div class="dashboard-number"><?= $this->view->dashboard['total_tarefas'] ?></div>
+        <div class="dashboard-subtext">
+          Total registado nos projetos
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
       <div class="dashboard-card">
         <div class="dashboard-title">Orçamento total dos projetos</div>
         <div class="dashboard-number">
@@ -135,6 +180,125 @@
         </div>
       </div>
     </div>
+
+    <div class="col-12 col-lg-6">
+      <div class="dashboard-card">
+        <div class="dashboard-title">Salário médio por dia</div>
+        <div class="dashboard-number">
+          <?= number_format((float)$this->view->dashboard['salario_medio_diario'], 2, ',', '.') ?> €
+        </div>
+        <div class="dashboard-subtext">
+          Média diária por trabalhador registado
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mt-1">
+    <div class="col-12 col-lg-6">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Projetos por estado</div>
+          <select id="chartTypeProjetosEstado" class="form-select form-select-sm chart-type-select">
+            <option value="doughnut">Doughnut</option>
+            <option value="bar">Barras</option>
+          </select>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chartProjetosEstado"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Recursos por stock</div>
+          <select id="chartTypeRecursosStock" class="form-select form-select-sm chart-type-select">
+            <option value="doughnut">Doughnut</option>
+            <option value="bar">Barras</option>
+          </select>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chartRecursosStock"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Tarefas por estado</div>
+          <select id="chartTypeTarefasEstado" class="form-select form-select-sm chart-type-select">
+            <option value="bar">Barras</option>
+            <option value="doughnut">Doughnut</option>
+          </select>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chartTarefasEstado"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Tarefas por prioridade</div>
+          <select id="chartTypeTarefasPrioridade" class="form-select form-select-sm chart-type-select">
+            <option value="bar">Barras</option>
+            <option value="doughnut">Doughnut</option>
+          </select>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chartTarefasPrioridade"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Top 5 projetos por orçamento</div>
+          <select id="chartTypeTopProjetos" class="form-select form-select-sm chart-type-select">
+            <option value="bar">Barras</option>
+            <option value="line">Linha</option>
+          </select>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chartTopProjetos"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mt-1">
+    <div class="col-12">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Evolução temporal dos projetos</div>
+          <div class="d-flex gap-2 flex-wrap">
+            <select id="chartPeriodoTemporal" class="form-select form-select-sm chart-type-select">
+              <option value="trimestre">Trimestre</option>
+              <option value="semestre">Semestre</option>
+            </select>
+
+            <select id="chartMetricaTemporal" class="form-select form-select-sm chart-type-select">
+              <option value="projetos">Nº de projetos</option>
+              <option value="orcamento">Orçamento</option>
+            </select>
+
+            <select id="chartTypeTemporal" class="form-select form-select-sm chart-type-select">
+              <option value="bar">Barras</option>
+              <option value="line">Linha</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="chart-wrap">
+          <canvas id="chartTemporalProjetos"></canvas>
+        </div>
+      </div>
+    </div>
   </div>
 
   <footer class="mt-4">
@@ -142,6 +306,315 @@
   </footer>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
   document.getElementById("year").textContent = new Date().getFullYear();
+
+  const dashboardGraficos = <?= json_encode($this->view->dashboard['graficos'], JSON_UNESCAPED_UNICODE) ?>;
+
+  const rootStyles = getComputedStyle(document.documentElement);
+  const textColor = (rootStyles.getPropertyValue('--text-main') || '#111827').trim();
+  const mutedColor = (rootStyles.getPropertyValue('--text-muted') || '#6b7280').trim();
+  const borderColor = (rootStyles.getPropertyValue('--border-color') || 'rgba(0,0,0,0.08)').trim();
+
+  const palette = [
+    'rgba(13, 110, 253, 0.85)',
+    'rgba(25, 135, 84, 0.85)',
+    'rgba(255, 193, 7, 0.85)',
+    'rgba(220, 53, 69, 0.85)',
+    'rgba(111, 66, 193, 0.85)',
+    'rgba(13, 202, 240, 0.85)'
+  ];
+
+  const commonOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        labels: {
+          color: textColor
+        }
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: mutedColor },
+        grid: { color: borderColor }
+      },
+      y: {
+        beginAtZero: true,
+        ticks: { color: mutedColor },
+        grid: { color: borderColor }
+      }
+    }
+  };
+
+  const doughnutOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        labels: {
+          color: textColor
+        }
+      }
+    }
+  };
+
+  const lineOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        labels: {
+          color: textColor
+        }
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: mutedColor },
+        grid: { color: borderColor }
+      },
+      y: {
+        beginAtZero: true,
+        ticks: { color: mutedColor },
+        grid: { color: borderColor }
+      }
+    }
+  };
+
+  const charts = {};
+
+  function getSavedType(key, fallback) {
+    return localStorage.getItem(key) || fallback;
+  }
+
+  function saveType(key, value) {
+    localStorage.setItem(key, value);
+  }
+
+  function buildChart(canvasId, type, config) {
+    if (charts[canvasId]) {
+      charts[canvasId].destroy();
+    }
+
+    charts[canvasId] = new Chart(document.getElementById(canvasId), {
+      type: type,
+      data: config.data,
+      options: config.options
+    });
+  }
+
+  function renderProjetosEstado(type) {
+    buildChart('chartProjetosEstado', type, {
+      data: {
+        labels: dashboardGraficos.projetos_por_estado.labels,
+        datasets: [{
+          label: 'Projetos',
+          data: dashboardGraficos.projetos_por_estado.values,
+          backgroundColor: palette,
+          borderRadius: type === 'bar' ? 8 : 0
+        }]
+      },
+      options: type === 'doughnut' ? doughnutOptions : commonOptions
+    });
+  }
+
+  function renderRecursosStock(type) {
+    buildChart('chartRecursosStock', type, {
+      data: {
+        labels: dashboardGraficos.recursos_por_stock.labels,
+        datasets: [{
+          label: 'Recursos',
+          data: dashboardGraficos.recursos_por_stock.values,
+          backgroundColor: [
+            'rgba(25, 135, 84, 0.85)',
+            'rgba(255, 193, 7, 0.85)',
+            'rgba(220, 53, 69, 0.85)'
+          ],
+          borderRadius: type === 'bar' ? 8 : 0
+        }]
+      },
+      options: type === 'doughnut' ? doughnutOptions : commonOptions
+    });
+  }
+
+  function renderTarefasEstado(type) {
+    buildChart('chartTarefasEstado', type, {
+      data: {
+        labels: dashboardGraficos.tarefas_por_estado.labels,
+        datasets: [{
+          label: 'Tarefas',
+          data: dashboardGraficos.tarefas_por_estado.values,
+          backgroundColor: [
+            'rgba(255, 193, 7, 0.85)',
+            'rgba(13, 202, 240, 0.85)',
+            'rgba(25, 135, 84, 0.85)'
+          ],
+          borderRadius: type === 'bar' ? 8 : 0
+        }]
+      },
+      options: type === 'doughnut' ? doughnutOptions : commonOptions
+    });
+  }
+
+  function renderTarefasPrioridade(type) {
+    buildChart('chartTarefasPrioridade', type, {
+      data: {
+        labels: dashboardGraficos.tarefas_por_prioridade.labels,
+        datasets: [{
+          label: 'Tarefas',
+          data: dashboardGraficos.tarefas_por_prioridade.values,
+          backgroundColor: [
+            'rgba(25, 135, 84, 0.85)',
+            'rgba(255, 193, 7, 0.85)',
+            'rgba(220, 53, 69, 0.85)'
+          ],
+          borderRadius: type === 'bar' ? 8 : 0
+        }]
+      },
+      options: type === 'doughnut' ? doughnutOptions : commonOptions
+    });
+  }
+
+  function renderTopProjetos(type) {
+    buildChart('chartTopProjetos', type, {
+      data: {
+        labels: dashboardGraficos.top_projetos_orcamento.labels,
+        datasets: [{
+          label: 'Orçamento (€)',
+          data: dashboardGraficos.top_projetos_orcamento.values,
+          backgroundColor: 'rgba(13, 110, 253, 0.85)',
+          borderColor: 'rgba(13, 110, 253, 1)',
+          tension: 0.3,
+          fill: false,
+          borderRadius: type === 'bar' ? 8 : 0
+        }]
+      },
+      options: type === 'line' ? lineOptions : commonOptions
+    });
+  }
+
+  function renderTemporal(periodo, metrica, tipo) {
+    const dados = dashboardGraficos.temporais[periodo];
+
+    let valores = [];
+    let labelDataset = '';
+
+    if (metrica === 'projetos') {
+      valores = dados.projetos;
+      labelDataset = 'Nº de projetos';
+    } else {
+      valores = dados.orcamento;
+      labelDataset = 'Orçamento (€)';
+    }
+
+    buildChart('chartTemporalProjetos', tipo, {
+      data: {
+        labels: dados.labels,
+        datasets: [{
+          label: labelDataset,
+          data: valores,
+          backgroundColor: 'rgba(13, 110, 253, 0.85)',
+          borderColor: 'rgba(13, 110, 253, 1)',
+          tension: 0.3,
+          fill: false,
+          borderRadius: tipo === 'bar' ? 8 : 0
+        }]
+      },
+      options: tipo === 'line' ? lineOptions : commonOptions
+    });
+  }
+
+  const chartConfigs = [
+    {
+      selectId: 'chartTypeProjetosEstado',
+      storageKey: 'dashboard_chart_projetos_estado',
+      defaultType: 'doughnut',
+      render: renderProjetosEstado
+    },
+    {
+      selectId: 'chartTypeRecursosStock',
+      storageKey: 'dashboard_chart_recursos_stock',
+      defaultType: 'doughnut',
+      render: renderRecursosStock
+    },
+    {
+      selectId: 'chartTypeTarefasEstado',
+      storageKey: 'dashboard_chart_tarefas_estado',
+      defaultType: 'bar',
+      render: renderTarefasEstado
+    },
+    {
+      selectId: 'chartTypeTarefasPrioridade',
+      storageKey: 'dashboard_chart_tarefas_prioridade',
+      defaultType: 'bar',
+      render: renderTarefasPrioridade
+    },
+    {
+      selectId: 'chartTypeTopProjetos',
+      storageKey: 'dashboard_chart_top_projetos',
+      defaultType: 'bar',
+      render: renderTopProjetos
+    }
+  ];
+
+  chartConfigs.forEach((item) => {
+    const select = document.getElementById(item.selectId);
+    const savedType = getSavedType(item.storageKey, item.defaultType);
+
+    select.value = savedType;
+    item.render(savedType);
+
+    select.addEventListener('change', function () {
+      saveType(item.storageKey, this.value);
+      item.render(this.value);
+    });
+  });
+
+  function getTemporalSettings() {
+    return {
+      periodo: localStorage.getItem('dashboard_chart_temporal_periodo') || 'trimestre',
+      metrica: localStorage.getItem('dashboard_chart_temporal_metrica') || 'projetos',
+      tipo: localStorage.getItem('dashboard_chart_temporal_tipo') || 'bar'
+    };
+  }
+
+  function saveTemporalSettings(periodo, metrica, tipo) {
+    localStorage.setItem('dashboard_chart_temporal_periodo', periodo);
+    localStorage.setItem('dashboard_chart_temporal_metrica', metrica);
+    localStorage.setItem('dashboard_chart_temporal_tipo', tipo);
+  }
+
+  const temporalPeriodoSelect = document.getElementById('chartPeriodoTemporal');
+  const temporalMetricaSelect = document.getElementById('chartMetricaTemporal');
+  const temporalTipoSelect = document.getElementById('chartTypeTemporal');
+
+  if (temporalPeriodoSelect && temporalMetricaSelect && temporalTipoSelect) {
+    const temporalSaved = getTemporalSettings();
+
+    temporalPeriodoSelect.value = temporalSaved.periodo;
+    temporalMetricaSelect.value = temporalSaved.metrica;
+    temporalTipoSelect.value = temporalSaved.tipo;
+
+    renderTemporal(
+      temporalSaved.periodo,
+      temporalSaved.metrica,
+      temporalSaved.tipo
+    );
+
+    function atualizarTemporal() {
+      const periodo = temporalPeriodoSelect.value;
+      const metrica = temporalMetricaSelect.value;
+      const tipo = temporalTipoSelect.value;
+
+      saveTemporalSettings(periodo, metrica, tipo);
+      renderTemporal(periodo, metrica, tipo);
+    }
+
+    temporalPeriodoSelect.addEventListener('change', atualizarTemporal);
+    temporalMetricaSelect.addEventListener('change', atualizarTemporal);
+    temporalTipoSelect.addEventListener('change', atualizarTemporal);
+  }
 </script>
