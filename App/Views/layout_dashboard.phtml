@@ -24,26 +24,50 @@ $tema = $_SESSION['tema'] ?? 'light';
       --bg-body: #f8f9fa;
       --bg-surface: #ffffff;
       --bg-surface-soft: #ffffff;
-      --border-color: rgba(0,0,0,.05);
+      --border-color: rgba(0,0,0,.08);
       --text-main: #212529;
       --text-muted: #6b7280;
       --nav-text: #444;
       --nav-hover-bg: rgba(13,110,253,0.06);
       --nav-active-bg: rgba(13,110,253,0.12);
       --shadow-soft: 0 8px 30px rgba(0,0,0,0.06);
+
+      --input-bg: #ffffff;
+      --input-text: #212529;
+      --input-border: #ced4da;
+
+      --btn-outline-secondary-text: #495057;
+      --btn-outline-secondary-border: #ced4da;
+      --btn-outline-secondary-hover-bg: #e9ecef;
+      --btn-outline-secondary-hover-text: #212529;
+
+      --modal-bg: #ffffff;
+      --alert-border: rgba(0,0,0,.08);
     }
 
     html[data-theme="dark"] {
       --bg-body: #0f172a;
       --bg-surface: #111827;
       --bg-surface-soft: #1f2937;
-      --border-color: rgba(255,255,255,.08);
+      --border-color: rgba(255,255,255,.10);
       --text-main: #e5e7eb;
       --text-muted: #9ca3af;
       --nav-text: #d1d5db;
       --nav-hover-bg: rgba(59,130,246,0.14);
       --nav-active-bg: rgba(59,130,246,0.22);
       --shadow-soft: 0 8px 30px rgba(0,0,0,0.28);
+
+      --input-bg: #1f2937;
+      --input-text: #e5e7eb;
+      --input-border: rgba(255,255,255,.12);
+
+      --btn-outline-secondary-text: #d1d5db;
+      --btn-outline-secondary-border: rgba(255,255,255,.16);
+      --btn-outline-secondary-hover-bg: #374151;
+      --btn-outline-secondary-hover-text: #ffffff;
+
+      --modal-bg: #111827;
+      --alert-border: rgba(255,255,255,.10);
     }
 
     body {
@@ -95,10 +119,6 @@ $tema = $_SESSION['tema'] ?? 'light';
       color: var(--text-main);
     }
 
-    .alert {
-      border-radius: 12px;
-    }
-
     .navbar,
     .offcanvas,
     .offcanvas-header,
@@ -108,7 +128,8 @@ $tema = $_SESSION['tema'] ?? 'light';
     }
 
     .border-bottom,
-    .border-end {
+    .border-end,
+    hr {
       border-color: var(--border-color) !important;
     }
 
@@ -119,7 +140,10 @@ $tema = $_SESSION['tema'] ?? 'light';
 
     .fw-semibold,
     .fw-bold,
-    .offcanvas-title {
+    .offcanvas-title,
+    h1, h2, h3, h4, h5, h6,
+    label,
+    strong {
       color: var(--text-main);
     }
 
@@ -129,6 +153,89 @@ $tema = $_SESSION['tema'] ?? 'light';
 
     .btn-close {
       filter: <?= $tema === 'dark' ? 'invert(1)' : 'none' ?>;
+    }
+
+    .modal-content,
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+      background: var(--modal-bg);
+      color: var(--text-main);
+      border-color: var(--border-color);
+    }
+
+    .form-control,
+    .form-select,
+    textarea {
+      background-color: var(--input-bg) !important;
+      color: var(--input-text) !important;
+      border-color: var(--input-border) !important;
+    }
+
+    .form-control::placeholder,
+    textarea::placeholder {
+      color: var(--text-muted) !important;
+      opacity: 1;
+    }
+
+    .form-control:focus,
+    .form-select:focus,
+    textarea:focus {
+      background-color: var(--input-bg) !important;
+      color: var(--input-text) !important;
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 0 .25rem rgba(13,110,253,.18) !important;
+    }
+
+    .form-control:disabled,
+    .form-control[readonly] {
+      background-color: var(--bg-surface-soft) !important;
+      color: var(--text-muted) !important;
+      opacity: 1;
+    }
+
+    .input-group-text {
+      background: var(--bg-surface-soft);
+      color: var(--text-main);
+      border-color: var(--input-border);
+    }
+
+    .btn-outline-secondary {
+      color: var(--btn-outline-secondary-text);
+      border-color: var(--btn-outline-secondary-border);
+    }
+
+    .btn-outline-secondary:hover,
+    .btn-outline-secondary:focus,
+    .btn-outline-secondary:active {
+      background: var(--btn-outline-secondary-hover-bg) !important;
+      color: var(--btn-outline-secondary-hover-text) !important;
+      border-color: var(--btn-outline-secondary-border) !important;
+    }
+
+    .dropdown-menu {
+      background: var(--bg-surface);
+      color: var(--text-main);
+      border-color: var(--border-color);
+    }
+
+    .dropdown-item {
+      color: var(--text-main);
+    }
+
+    .dropdown-item:hover,
+    .dropdown-item:focus {
+      background: var(--nav-hover-bg);
+      color: var(--text-main);
+    }
+
+    .alert {
+      border-radius: 12px;
+      border: 1px solid var(--alert-border);
+    }
+
+    a {
+      color: inherit;
     }
 
     @media (max-width: 767.98px) {

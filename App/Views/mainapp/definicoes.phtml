@@ -2,18 +2,20 @@
   .page-header h1 {
     font-weight: 800;
     margin-bottom: 0.35rem;
+    color: var(--text-main, #111827);
   }
 
   .subtitle {
-    color: #6b7280;
+    color: var(--text-muted, #6b7280);
     margin-bottom: 0;
   }
 
   .settings-card {
-    background: #fff;
+    background: var(--bg-surface, #fff);
+    color: var(--text-main, #111827);
     border-radius: 18px;
     padding: 1.25rem;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+    box-shadow: var(--shadow-soft, 0 8px 30px rgba(0,0,0,0.06));
     height: 100%;
   }
 
@@ -21,18 +23,48 @@
     font-size: 1.05rem;
     font-weight: 800;
     margin-bottom: 0.35rem;
+    color: var(--text-main, #111827);
   }
 
   .muted {
-    color: #6b7280;
+    color: var(--text-muted, #6b7280);
   }
 
   .danger-zone {
     border: 1px solid rgba(220, 53, 69, 0.18);
   }
 
+  .settings-card .form-label,
+  .settings-card .form-check-label,
+  .settings-card p,
+  .settings-card div,
+  .settings-card span,
+  .settings-card h2,
+  .settings-card h3,
+  .settings-card h4,
+  .settings-card h5 {
+    color: inherit;
+  }
+
+  .settings-card .form-control,
+  .settings-card .form-select {
+    background: var(--bg-surface, #fff);
+    color: var(--text-main, #111827);
+    border-color: var(--border-color, #ced4da);
+  }
+
+  .settings-card .form-control::placeholder {
+    color: var(--text-muted, #6b7280);
+  }
+
+  .settings-card .form-control:focus,
+  .settings-card .form-select:focus {
+    background: var(--bg-surface, #fff);
+    color: var(--text-main, #111827);
+  }
+
   footer {
-    color: #6b7280;
+    color: var(--text-muted, #6b7280);
     font-size: 0.9rem;
     text-align: center;
     margin-top: 2rem;

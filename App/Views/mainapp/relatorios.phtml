@@ -2,46 +2,48 @@
   .page-header h1 {
     font-weight: 800;
     margin-bottom: 0.35rem;
+    color: var(--text-main, #111827);
   }
 
   .subtitle {
-    color: #6b7280;
+    color: var(--text-muted, #6b7280);
     margin-bottom: 0;
   }
 
   .report-card {
-    background: #fff;
+    background: var(--bg-surface, #fff);
+    color: var(--text-main, #111827);
     border-radius: 18px;
     padding: 1.25rem;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+    box-shadow: var(--shadow-soft, 0 8px 30px rgba(0,0,0,0.06));
     height: 100%;
   }
 
   .metric-title {
     font-size: 0.95rem;
     font-weight: 700;
-    color: #475569;
+    color: var(--text-muted, #475569);
     margin-bottom: 0.5rem;
   }
 
   .metric-number {
     font-size: 2rem;
     font-weight: 800;
-    color: #0f172a;
+    color: var(--text-main, #0f172a);
     line-height: 1.1;
   }
 
   .metric-subtext {
     margin-top: 0.4rem;
     font-size: 0.92rem;
-    color: #64748b;
+    color: var(--text-muted, #64748b);
   }
 
   .section-title {
     font-size: 1.05rem;
     font-weight: 800;
     margin-bottom: 1rem;
-    color: #0f172a;
+    color: var(--text-main, #0f172a);
   }
 
   .export-btn {
@@ -50,7 +52,7 @@
   }
 
   .muted {
-    color: #6b7280;
+    color: var(--text-muted, #6b7280);
   }
 
   .ai-box {
@@ -59,14 +61,15 @@
   }
 
   .ai-result {
-    background: #fff;
-    border: 1px solid rgba(0,0,0,0.08);
+    background: var(--bg-surface, #fff);
+    color: var(--text-main, #111827);
+    border: 1px solid var(--border-color, rgba(0,0,0,0.08));
     border-radius: 14px;
     white-space: pre-wrap;
   }
 
   footer {
-    color: #6b7280;
+    color: var(--text-muted, #6b7280);
     font-size: 0.9rem;
     text-align: center;
     margin-top: 2rem;

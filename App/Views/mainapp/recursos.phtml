@@ -1,16 +1,55 @@
 <style>
-  .low-stock {
+  .page-header h1 {
+    font-weight: 800;
+    margin-bottom: 0.35rem;
+    color: var(--text-main, #111827);
+  }
+
+  .subtitle {
+    color: var(--text-muted, #6b7280);
+    margin-bottom: 0;
+  }
+
+  .project-card {
+    background: var(--bg-surface, #fff);
+    color: var(--text-main, #111827);
+    border-radius: 18px;
+    padding: 1.25rem;
+    box-shadow: var(--shadow-soft, 0 8px 30px rgba(0,0,0,0.06));
+    height: 100%;
+  }
+
+  .muted {
+    color: var(--text-muted, #6b7280);
+  }
+
+  html[data-theme="light"] .low-stock {
     background: linear-gradient(90deg, #fff7ed, #fffaf0);
     border-left: 4px solid #f59e0b;
   }
 
-  .out-stock {
+  html[data-theme="light"] .out-stock {
     background: linear-gradient(90deg, #fff0f0, #fff7f7);
     border-left: 4px solid #ef4444;
   }
 
-  .in-stock {
+  html[data-theme="light"] .in-stock {
     background: linear-gradient(90deg, #f0fdf4, #f7fff7);
+    border-left: 4px solid #10b981;
+  }
+
+  html[data-theme="dark"] .low-stock {
+    background: linear-gradient(90deg, rgba(245, 158, 11, 0.16), rgba(245, 158, 11, 0.06));
+    border-left: 4px solid #f59e0b;
+  }
+
+  html[data-theme="dark"] .out-stock {
+    background: linear-gradient(90deg, rgba(239, 68, 68, 0.16), rgba(239, 68, 68, 0.06));
+    border-left: 4px solid #ef4444;
+  }
+
+  html[data-theme="dark"] .in-stock {
+    background: linear-gradient(90deg, rgba(16, 185, 129, 0.16), rgba(16, 185, 129, 0.06));
     border-left: 4px solid #10b981;
   }
 
@@ -19,6 +58,42 @@
     display: inline-flex;
     gap: 6px;
     align-items: center;
+  }
+
+  .modal-content,
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    background: var(--bg-surface, #fff);
+    color: var(--text-main, #111827);
+  }
+
+  .modal-content {
+    border-color: var(--border-color, rgba(0,0,0,0.08));
+  }
+
+  .form-control,
+  .form-select {
+    background: var(--bg-surface, #fff);
+    color: var(--text-main, #111827);
+    border-color: var(--border-color, #ced4da);
+  }
+
+  .form-control:focus,
+  .form-select:focus {
+    background: var(--bg-surface, #fff);
+    color: var(--text-main, #111827);
+  }
+
+  .form-control::placeholder {
+    color: var(--text-muted, #6b7280);
+  }
+
+  footer {
+    color: var(--text-muted, #6b7280);
+    font-size: 0.9rem;
+    text-align: center;
+    margin-top: 2rem;
   }
 </style>
 
@@ -72,7 +147,9 @@
           <div class="project-card p-3 <?= $stateClass ?>">
             <div class="d-flex justify-content-between align-items-start">
               <div>
-                <div style="font-weight:800"><?= htmlspecialchars($recurso['nome']) ?></div>
+                <div style="font-weight:800; color: var(--text-main, #111827);">
+                  <?= htmlspecialchars($recurso['nome']) ?>
+                </div>
                 <div class="muted" style="font-size:.9rem">
                   <?= htmlspecialchars($recurso['tipo']) ?> · Estado: <?= htmlspecialchars($recurso['estado']) ?>
                 </div>
@@ -99,7 +176,7 @@
             <div class="d-flex align-items-center justify-content-between mt-3">
               <div>
                 <div class="muted" style="font-size:.85rem">Quantidade</div>
-                <div style="font-weight:800; font-size:1.05rem">
+                <div style="font-weight:800; font-size:1.05rem; color: var(--text-main, #111827);">
                   <?= (int)$recurso['quantidade'] ?>
                 </div>
                 <div class="muted" style="font-size:.85rem;margin-top:6px">
