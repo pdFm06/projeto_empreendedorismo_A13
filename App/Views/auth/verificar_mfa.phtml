@@ -1,0 +1,27 @@
+<form action="/validar_mfa" method="post">
+  <h2 class="text-center mb-2">Verificação MFA</h2>
+  <p class="text-center text-muted mb-4">
+    Introduza o código de 6 dígitos enviado para o seu email.
+  </p>
+
+  <div class="form-floating mb-3">
+    <input
+      type="text"
+      class="form-control"
+      id="mfaCode"
+      placeholder="Código MFA"
+      name="codigo"
+      maxlength="6"
+      required
+    />
+    <label for="mfaCode">Código de verificação</label>
+  </div>
+
+  <button type="submit" class="btn btn-primary w-100">
+    Validar código
+  </button>
+
+  <div class="text-center mt-3 small">
+    <a href="/login">Voltar ao login</a>
+  </div>
+</form>

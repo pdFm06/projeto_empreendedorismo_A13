@@ -170,7 +170,7 @@
       <div class="settings-card">
         <div class="section-title">Autenticação multifator</div>
         <p class="muted mb-3">
-          Estado atual da MFA da sua conta.
+          Adicione uma camada extra de segurança ao iniciar sessão.
         </p>
 
         <div class="mb-3">
@@ -183,9 +183,19 @@
           />
         </div>
 
-        <div class="muted" style="font-size:.92rem;">
-          A ativação da MFA pode ser ligada numa próxima etapa da aplicação.
-        </div>
+        <?php if (empty($this->view->conta['mfa_ativo'])) { ?>
+          <form method="post" action="/ativar_mfa">
+            <button type="submit" class="btn btn-primary">
+              Ativar MFA
+            </button>
+          </form>
+        <?php } else { ?>
+          <form method="post" action="/desativar_mfa">
+            <button type="submit" class="btn btn-outline-danger">
+              Desativar MFA
+            </button>
+          </form>
+        <?php } ?>
       </div>
     </div>
 

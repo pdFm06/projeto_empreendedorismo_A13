@@ -1614,4 +1614,29 @@ class MainappController extends Action
         header('Location: /login');
         exit;
     }
+
+    public function ativarMfa()
+    {
+        $this->validarAutenticacao();
+
+        $utilizador = Container::getModel('Utilizador');
+        $utilizador->atualizarEstadoMfa($_SESSION['id'], 1);
+
+        Flash::set('success', 'MFA ativada com sucesso.');
+        header('Location: /definicoes');
+        exit;
+    }
+
+    public function desativarMfa()
+    {
+        $this->validarAutenticacao();
+
+        $utilizador = Container::getModel('Utilizador');
+        $utilizador->atualizarEstadoMfa($_SESSION['id'], 0);
+        $utilizador->limparCodigoMfa($_SESSION['id']);
+
+        Flash::set('success', 'MFA desativada com sucesso.');
+        header('Location: /definicoes');
+        exit;
+    }
 }

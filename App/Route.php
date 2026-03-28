@@ -328,6 +328,30 @@ class Route extends Bootstrap {
             'action' => 'apagarConta'
         );
 
+        $routes['verificar_mfa'] = array(
+            'route' => '/verificar_mfa',
+            'controller' => 'authController',
+            'action' => 'verificarMfaPage'
+        );
+
+        $routes['validar_mfa'] = array(
+            'route' => '/validar_mfa',
+            'controller' => 'authController',
+            'action' => 'validarMfa'
+        );
+
+        $routes['ativar_mfa'] = array(
+            'route' => '/ativar_mfa',
+            'controller' => 'mainappController',
+            'action' => 'ativarMfa'
+        );
+
+        $routes['desativar_mfa'] = array(
+            'route' => '/desativar_mfa',
+            'controller' => 'mainappController',
+            'action' => 'desativarMfa'
+        );
+
 
         $this->setRoutes($routes);
     }

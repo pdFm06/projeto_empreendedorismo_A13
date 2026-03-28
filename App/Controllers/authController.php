@@ -43,6 +43,31 @@ class AuthController extends Action
         $user = $utilizador->obterPorEmail();
 
         if ($user && password_verify($password, trim($user['password']))) {
+
+            if (!empty($user['mfa_ativo'])) {
+                $codigo = (string) random_int(100000, 999999);
+                $expiresAt = date('Y-m-d H:i:s', strtotime('+10 minutes'));
+
+                $utilizador->guardarCodigoMfa($user['id'], $codigo, $expiresAt);
+
+                $_SESSION['mfa_user_id'] = $user['id'];
+                $_SESSION['mfa_user_email'] = $user['email'];
+                $_SESSION['mfa_user_tema'] = $user['tema'] ?? 'light';
+
+                $mensagemHtml = "
+                    <h2>Verificação MFA</h2>
+                    <p>O seu código de verificação é:</p>
+                    <h1 style='color:#3366cc; font-size:32px;'>{$codigo}</h1>
+                    <p>Este código expira em 10 minutos.</p>
+                ";
+
+                Email::enviar($user['email'], 'Código MFA - OnBUILD', $mensagemHtml);
+
+                Flash::set('info', 'Foi enviado um código de verificação para o seu email.');
+                header('Location: /verificar_mfa');
+                exit;
+            }
+
             session_regenerate_id(true);
             $_SESSION['id'] = $user['id'];
             $_SESSION['email'] = $user['email'];
@@ -55,6 +80,61 @@ class AuthController extends Action
 
         Flash::set('danger', 'E-mail ou palavra-passe incorretos.');
         header('Location: /login');
+        exit;
+    }
+
+    public function verificarMfaPage()
+    {
+        if (empty($_SESSION['mfa_user_id'])) {
+            header('Location: /login');
+            exit;
+        }
+
+        $this->render('verificar_mfa', 'layout1');
+    }
+
+    public function validarMfa()
+    {
+        if (empty($_SESSION['mfa_user_id'])) {
+            header('Location: /login');
+            exit;
+        }
+
+        $codigo = trim($_POST['codigo'] ?? '');
+        $userId = $_SESSION['mfa_user_id'];
+
+        if ($codigo === '') {
+            Flash::set('warning', 'Introduza o código de verificação.');
+            header('Location: /verificar_mfa');
+            exit;
+        }
+
+        $utilizador = Container::getModel('Utilizador');
+        $user = $utilizador->obterPorId($userId);
+
+        if (
+            !$user ||
+            empty($user['mfa_codigo']) ||
+            $user['mfa_codigo'] !== $codigo ||
+            empty($user['mfa_expires_at']) ||
+            strtotime($user['mfa_expires_at']) < time()
+        ) {
+            Flash::set('danger', 'Código inválido ou expirado.');
+            header('Location: /verificar_mfa');
+            exit;
+        }
+
+        $utilizador->limparCodigoMfa($userId);
+
+        session_regenerate_id(true);
+        $_SESSION['id'] = $user['id'];
+        $_SESSION['email'] = $user['email'];
+        $_SESSION['tema'] = $user['tema'] ?? 'light';
+
+        unset($_SESSION['mfa_user_id'], $_SESSION['mfa_user_email'], $_SESSION['mfa_user_tema']);
+
+        Flash::set('success', 'Verificação concluída com sucesso.');
+        header('Location: /dashboard');
         exit;
     }
 
@@ -239,15 +319,15 @@ class AuthController extends Action
         $this->render('codigo', 'layout1');
     }
 
-    # Criar conta
+    # Registo de conta
     public function criarConta()
     {
         $email = trim($_POST['email'] ?? '');
-        $password = $_POST['password'] ?? '';
-        $password2 = $_POST['password2'] ?? '';
+        $password = trim($_POST['password'] ?? '');
+        $password2 = trim($_POST['password2'] ?? '');
 
-        if ($email === '') {
-            Flash::set('warning', 'O e-mail é obrigatório.');
+        if ($email === '' || $password === '' || $password2 === '') {
+            Flash::set('warning', 'Preencha todos os campos.');
             header('Location: /registar');
             exit;
         }
@@ -322,9 +402,4 @@ class AuthController extends Action
         return null;
     }
 
-
-    public function teste()
-    {
-        echo "O login está a funcionar!";
-    }
 }
