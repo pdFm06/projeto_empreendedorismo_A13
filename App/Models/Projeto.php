@@ -44,6 +44,7 @@ class Projeto extends Model
                 p.orcamento,
                 p.gestor_id,
                 p.utilizador_id,
+                p.criado_em,
                 u.email AS gestor_nome
             FROM projetos p
             INNER JOIN utilizadores u ON u.id = p.gestor_id

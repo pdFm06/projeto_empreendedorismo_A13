@@ -32,6 +32,7 @@ class Tarefa extends Model
         $query = "
             SELECT
                 t.*,
+                t.criado_em,
                 tr.nome AS trabalhador_nome
             FROM tarefas t
             LEFT JOIN trabalhadores tr ON tr.id = t.trabalhador_id
@@ -45,6 +46,34 @@ class Tarefa extends Model
 
         $stmt = $this->db->prepare($query);
         $stmt->bindValue(':projeto_id', $projetoId);
+        $stmt->bindValue(':utilizador_id', $utilizadorId);
+        $stmt->execute();
+
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    public function listarPorUtilizador($utilizadorId)
+    {
+        $query = "
+            SELECT
+                t.id,
+                t.projeto_id,
+                t.trabalhador_id,
+                t.utilizador_id,
+                t.titulo,
+                t.descricao,
+                t.estado,
+                t.prioridade,
+                t.data_limite,
+                t.criado_em,
+                tr.nome AS trabalhador_nome
+            FROM tarefas t
+            LEFT JOIN trabalhadores tr ON tr.id = t.trabalhador_id
+            WHERE t.utilizador_id = :utilizador_id
+            ORDER BY t.id DESC
+        ";
+
+        $stmt = $this->db->prepare($query);
         $stmt->bindValue(':utilizador_id', $utilizadorId);
         $stmt->execute();
 

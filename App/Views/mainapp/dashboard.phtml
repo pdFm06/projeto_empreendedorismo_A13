@@ -39,6 +39,43 @@
     color: var(--text-muted, #64748b);
   }
 
+  .trend-positive {
+    color: #198754;
+    font-weight: 700;
+  }
+
+  .trend-negative {
+    color: #dc3545;
+    font-weight: 700;
+  }
+
+  .trend-neutral {
+    color: var(--text-muted, #64748b);
+    font-weight: 700;
+  }
+
+  .dashboard-number.trend-positive,
+  .dashboard-number.trend-negative,
+  .dashboard-number.trend-neutral {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .mini-select {
+    max-width: 180px;
+    min-width: 120px;
+  }
+
+  .dashboard-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+  }
+
   .chart-card {
     background: var(--bg-surface, #fff);
     color: var(--text-main, #111827);
@@ -89,6 +126,77 @@
   </div>
 
   <div class="row g-4 align-items-stretch">
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="dashboard-card">
+        <div class="dashboard-card-header">
+          <div class="dashboard-title mb-0">Média por período</div>
+          <div class="d-flex gap-2 flex-wrap">
+            <select id="mediaPeriodoSelect" class="form-select form-select-sm mini-select">
+              <option value="mes">Mês</option>
+              <option value="trimestre">Trimestre</option>
+              <option value="semestre">Semestre</option>
+            </select>
+            <select id="mediaMetricaSelect" class="form-select form-select-sm mini-select">
+              <option value="projetos">Projetos</option>
+              <option value="trabalhadores">Trabalhadores</option>
+              <option value="equipas">Equipas</option>
+              <option value="recursos">Recursos</option>
+              <option value="tarefas">Tarefas</option>
+              <option value="orcamento">Orçamento</option>
+            </select>
+          </div>
+        </div>
+        <div class="dashboard-number" id="mediaCardNumber">0</div>
+        <div class="dashboard-subtext" id="mediaCardSubtext">—</div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="dashboard-card">
+        <div class="dashboard-card-header">
+          <div class="dashboard-title mb-0">Comparação 1</div>
+          <div class="d-flex gap-2 flex-wrap">
+            <select id="compare1PeriodoSelect" class="form-select form-select-sm mini-select">
+              <option value="mes">Mês</option>
+              <option value="trimestre" selected>Trimestre</option>
+              <option value="semestre">Semestre</option>
+            </select>
+            <select id="compare1MetricaSelect" class="form-select form-select-sm mini-select">
+              <option value="projetos">Projetos</option>
+              <option value="tarefas" selected>Tarefas</option>
+              <option value="orcamento">Orçamento</option>
+            </select>
+          </div>
+        </div>
+        <div class="dashboard-number" id="compare1Number">0%</div>
+        <div class="dashboard-subtext" id="compare1Subtext">—</div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="dashboard-card">
+        <div class="dashboard-card-header">
+          <div class="dashboard-title mb-0">Comparação 2</div>
+          <div class="d-flex gap-2 flex-wrap">
+            <select id="compare2PeriodoSelect" class="form-select form-select-sm mini-select">
+              <option value="mes">Mês</option>
+              <option value="trimestre">Trimestre</option>
+              <option value="semestre" selected>Semestre</option>
+            </select>
+            <select id="compare2MetricaSelect" class="form-select form-select-sm mini-select">
+              <option value="projetos">Projetos</option>
+              <option value="tarefas">Tarefas</option>
+              <option value="orcamento" selected>Orçamento</option>
+            </select>
+          </div>
+        </div>
+        <div class="dashboard-number" id="compare2Number">0%</div>
+        <div class="dashboard-subtext" id="compare2Subtext">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 align-items-stretch mt-1">
     <div class="col-12 col-md-6 col-lg-3">
       <div class="dashboard-card">
         <div class="dashboard-title">Projetos</div>
@@ -275,15 +383,20 @@
     <div class="col-12">
       <div class="chart-card">
         <div class="chart-header">
-          <div class="chart-title">Evolução temporal dos projetos</div>
+          <div class="chart-title">Evolução temporal</div>
           <div class="d-flex gap-2 flex-wrap">
             <select id="chartPeriodoTemporal" class="form-select form-select-sm chart-type-select">
+              <option value="mes">Mês</option>
               <option value="trimestre">Trimestre</option>
               <option value="semestre">Semestre</option>
             </select>
 
             <select id="chartMetricaTemporal" class="form-select form-select-sm chart-type-select">
-              <option value="projetos">Nº de projetos</option>
+              <option value="projetos">Projetos</option>
+              <option value="trabalhadores">Trabalhadores</option>
+              <option value="equipas">Equipas</option>
+              <option value="recursos">Recursos</option>
+              <option value="tarefas">Tarefas</option>
               <option value="orcamento">Orçamento</option>
             </select>
 
@@ -311,6 +424,8 @@
   document.getElementById("year").textContent = new Date().getFullYear();
 
   const dashboardGraficos = <?= json_encode($this->view->dashboard['graficos'], JSON_UNESCAPED_UNICODE) ?>;
+  const dashboardMedias = <?= json_encode($this->view->dashboard['medias'] ?? [], JSON_UNESCAPED_UNICODE) ?>;
+  const dashboardComparacoes = <?= json_encode($this->view->dashboard['comparacoes'] ?? [], JSON_UNESCAPED_UNICODE) ?>;
 
   const rootStyles = getComputedStyle(document.documentElement);
   const textColor = (rootStyles.getPropertyValue('--text-main') || '#111827').trim();
@@ -325,6 +440,21 @@
     'rgba(111, 66, 193, 0.85)',
     'rgba(13, 202, 240, 0.85)'
   ];
+
+  const metricLabels = {
+    projetos: 'Projetos',
+    trabalhadores: 'Trabalhadores',
+    equipas: 'Equipas',
+    recursos: 'Recursos',
+    tarefas: 'Tarefas',
+    orcamento: 'Orçamento'
+  };
+
+  const periodLabels = {
+    mes: 'mês',
+    trimestre: 'trimestre',
+    semestre: 'semestre'
+  };
 
   const commonOptions = {
     responsive: true,
@@ -404,6 +534,85 @@
       data: config.data,
       options: config.options
     });
+  }
+
+  function formatNumber(value, metric) {
+    const number = Number(value || 0);
+
+    if (metric === 'orcamento') {
+      return number.toLocaleString('pt-PT', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }) + ' €';
+    }
+
+    return number.toLocaleString('pt-PT', {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1
+    });
+  }
+
+  function formatPercent(value) {
+    const number = Number(value || 0);
+    const absValue = Math.abs(number);
+
+    return absValue.toLocaleString('pt-PT', {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1
+    }) + '%';
+  }
+
+  function getTrendClass(value) {
+    const number = Number(value || 0);
+    if (number > 0) return 'trend-positive';
+    if (number < 0) return 'trend-negative';
+    return 'trend-neutral';
+  }
+
+  function getTrendSymbol(value) {
+    const number = Number(value || 0);
+    if (number > 0) return '▲';
+    if (number < 0) return '▼';
+    return '•';
+  }
+
+  function getTrendText(value) {
+    const number = Number(value || 0);
+    if (number > 0) return 'Cresceu face ao período anterior';
+    if (number < 0) return 'Desceu face ao período anterior';
+    return 'Sem variação face ao período anterior';
+  }
+
+  function updateMediaCard() {
+    const periodo = document.getElementById('mediaPeriodoSelect').value;
+    const metrica = document.getElementById('mediaMetricaSelect').value;
+
+    const value = dashboardMedias?.[periodo]?.[metrica] ?? 0;
+
+    document.getElementById('mediaCardNumber').textContent = formatNumber(value, metrica);
+    document.getElementById('mediaCardSubtext').textContent =
+      `Média de ${metricLabels[metrica].toLowerCase()} por ${periodLabels[periodo]}`;
+  }
+
+  function updateCompareCard(numberId, subtextId, periodo, metrica) {
+    const compare = dashboardComparacoes?.[periodo]?.[metrica] || {
+      atual: 0,
+      anterior: 0,
+      variacao_percentual: 0
+    };
+
+    const numberEl = document.getElementById(numberId);
+    const subtextEl = document.getElementById(subtextId);
+
+    const symbol = getTrendSymbol(compare.variacao_percentual);
+    const formattedPercent = formatPercent(compare.variacao_percentual);
+
+    numberEl.textContent = `${symbol} ${formattedPercent}`;
+    numberEl.classList.remove('trend-positive', 'trend-negative', 'trend-neutral');
+    numberEl.classList.add(getTrendClass(compare.variacao_percentual));
+
+    subtextEl.textContent =
+      `${getTrendText(compare.variacao_percentual)} · ${metricLabels[metrica]}: ${compare.atual} vs ${compare.anterior}`;
   }
 
   function renderProjetosEstado(type) {
@@ -497,22 +706,23 @@
   }
 
   function renderTemporal(periodo, metrica, tipo) {
-    const dados = dashboardGraficos.temporais[periodo];
+    const dados = dashboardGraficos.temporais[periodo] || { labels: [] };
 
-    let valores = [];
-    let labelDataset = '';
+    const labelsMap = {
+      projetos: 'Projetos',
+      trabalhadores: 'Trabalhadores',
+      equipas: 'Equipas',
+      recursos: 'Recursos',
+      tarefas: 'Tarefas',
+      orcamento: 'Orçamento (€)'
+    };
 
-    if (metrica === 'projetos') {
-      valores = dados.projetos;
-      labelDataset = 'Nº de projetos';
-    } else {
-      valores = dados.orcamento;
-      labelDataset = 'Orçamento (€)';
-    }
+    const valores = dados[metrica] || [];
+    const labelDataset = labelsMap[metrica] || 'Valor';
 
     buildChart('chartTemporalProjetos', tipo, {
       data: {
-        labels: dados.labels,
+        labels: dados.labels || [],
         datasets: [{
           label: labelDataset,
           data: valores,
@@ -575,7 +785,7 @@
 
   function getTemporalSettings() {
     return {
-      periodo: localStorage.getItem('dashboard_chart_temporal_periodo') || 'trimestre',
+      periodo: localStorage.getItem('dashboard_chart_temporal_periodo') || 'mes',
       metrica: localStorage.getItem('dashboard_chart_temporal_metrica') || 'projetos',
       tipo: localStorage.getItem('dashboard_chart_temporal_tipo') || 'bar'
     };
@@ -585,6 +795,21 @@
     localStorage.setItem('dashboard_chart_temporal_periodo', periodo);
     localStorage.setItem('dashboard_chart_temporal_metrica', metrica);
     localStorage.setItem('dashboard_chart_temporal_tipo', tipo);
+  }
+
+  function getSummarySettings() {
+    return {
+      mediaPeriodo: localStorage.getItem('dashboard_media_periodo') || 'mes',
+      mediaMetrica: localStorage.getItem('dashboard_media_metrica') || 'projetos',
+      compare1Periodo: localStorage.getItem('dashboard_compare1_periodo') || 'trimestre',
+      compare1Metrica: localStorage.getItem('dashboard_compare1_metrica') || 'tarefas',
+      compare2Periodo: localStorage.getItem('dashboard_compare2_periodo') || 'semestre',
+      compare2Metrica: localStorage.getItem('dashboard_compare2_metrica') || 'orcamento'
+    };
+  }
+
+  function saveSummarySetting(key, value) {
+    localStorage.setItem(key, value);
   }
 
   const temporalPeriodoSelect = document.getElementById('chartPeriodoTemporal');
@@ -617,4 +842,70 @@
     temporalMetricaSelect.addEventListener('change', atualizarTemporal);
     temporalTipoSelect.addEventListener('change', atualizarTemporal);
   }
+
+  const mediaPeriodoSelect = document.getElementById('mediaPeriodoSelect');
+  const mediaMetricaSelect = document.getElementById('mediaMetricaSelect');
+  const compare1PeriodoSelect = document.getElementById('compare1PeriodoSelect');
+  const compare1MetricaSelect = document.getElementById('compare1MetricaSelect');
+  const compare2PeriodoSelect = document.getElementById('compare2PeriodoSelect');
+  const compare2MetricaSelect = document.getElementById('compare2MetricaSelect');
+
+  const summarySaved = getSummarySettings();
+
+  mediaPeriodoSelect.value = summarySaved.mediaPeriodo;
+  mediaMetricaSelect.value = summarySaved.mediaMetrica;
+  compare1PeriodoSelect.value = summarySaved.compare1Periodo;
+  compare1MetricaSelect.value = summarySaved.compare1Metrica;
+  compare2PeriodoSelect.value = summarySaved.compare2Periodo;
+  compare2MetricaSelect.value = summarySaved.compare2Metrica;
+
+  function refreshSummaryCards() {
+    updateMediaCard();
+
+    updateCompareCard(
+      'compare1Number',
+      'compare1Subtext',
+      compare1PeriodoSelect.value,
+      compare1MetricaSelect.value
+    );
+
+    updateCompareCard(
+      'compare2Number',
+      'compare2Subtext',
+      compare2PeriodoSelect.value,
+      compare2MetricaSelect.value
+    );
+  }
+
+  mediaPeriodoSelect.addEventListener('change', function () {
+    saveSummarySetting('dashboard_media_periodo', this.value);
+    refreshSummaryCards();
+  });
+
+  mediaMetricaSelect.addEventListener('change', function () {
+    saveSummarySetting('dashboard_media_metrica', this.value);
+    refreshSummaryCards();
+  });
+
+  compare1PeriodoSelect.addEventListener('change', function () {
+    saveSummarySetting('dashboard_compare1_periodo', this.value);
+    refreshSummaryCards();
+  });
+
+  compare1MetricaSelect.addEventListener('change', function () {
+    saveSummarySetting('dashboard_compare1_metrica', this.value);
+    refreshSummaryCards();
+  });
+
+  compare2PeriodoSelect.addEventListener('change', function () {
+    saveSummarySetting('dashboard_compare2_periodo', this.value);
+    refreshSummaryCards();
+  });
+
+  compare2MetricaSelect.addEventListener('change', function () {
+    saveSummarySetting('dashboard_compare2_metrica', this.value);
+    refreshSummaryCards();
+  });
+
+  refreshSummaryCards();
 </script>
