@@ -22,375 +22,399 @@ class MainappController extends Action
     # Dashboard
     public function dashboard()
     {   
-    $this->validarAutenticacao();
+        $this->validarAutenticacao();
 
-    $projeto = Container::getModel('Projeto');
-    $trabalhador = Container::getModel('Trabalhador');
-    $equipa = Container::getModel('Equipa');
-    $recurso = Container::getModel('Recurso');
+        $projeto = Container::getModel('Projeto');
+        $trabalhador = Container::getModel('Trabalhador');
+        $equipa = Container::getModel('Equipa');
+        $recurso = Container::getModel('Recurso');
 
-    $projetos = $projeto->listarPorUtilizador($_SESSION['id']);
-    $trabalhadores = $trabalhador->listarPorUtilizador($_SESSION['id']);
-    $equipas = $equipa->listarPorUtilizador($_SESSION['id']);
-    $recursos = $recurso->listarPorUtilizador($_SESSION['id']);
+        $projetos = $projeto->listarPorUtilizador($_SESSION['id']);
+        $trabalhadores = $trabalhador->listarPorUtilizador($_SESSION['id']);
+        $equipas = $equipa->listarPorUtilizador($_SESSION['id']);
+        $recursos = $recurso->listarPorUtilizador($_SESSION['id']);
 
-    $tarefas = [];
-    try {
-        $tarefa = Container::getModel('Tarefa');
-        if (method_exists($tarefa, 'listarPorUtilizador')) {
-            $tarefas = $tarefa->listarPorUtilizador($_SESSION['id']);
-        }
-    } catch (\Throwable $e) {
         $tarefas = [];
-    }
-
-    $totalProjetos = count($projetos);
-    $projetosEmExecucao = 0;
-    $projetosConcluidos = 0;
-    $orcamentoTotal = 0;
-
-    $projetosPorEstado = [
-        'planeado' => 0,
-        'em_execucao' => 0,
-        'concluido' => 0,
-        'suspenso' => 0
-    ];
-
-    $topProjetosOrcamento = [];
-
-    foreach ($projetos as $p) {
-        $estado = $p['estado'] ?? '';
-
-        if ($estado === 'em_execucao') {
-            $projetosEmExecucao++;
+        try {
+            $tarefa = Container::getModel('Tarefa');
+            if (method_exists($tarefa, 'listarPorUtilizador')) {
+                $tarefas = $tarefa->listarPorUtilizador($_SESSION['id']);
+            }
+        } catch (\Throwable $e) {
+            $tarefas = [];
         }
 
-        if ($estado === 'concluido') {
-            $projetosConcluidos++;
+        $trabalhadoresLesionadosAtualmente = 0;
+        try {
+            $lesao = Container::getModel('LesaoTrabalhador');
+
+            foreach ($trabalhadores as $trabalhadorItem) {
+                $lesoes = $lesao->listarPorTrabalhador($trabalhadorItem['id'], $_SESSION['id']);
+                $temLesaoAtiva = false;
+
+                foreach ($lesoes as $lesaoItem) {
+                    if (($lesaoItem['estado'] ?? '') === 'ativa') {
+                        $temLesaoAtiva = true;
+                        break;
+                    }
+                }
+
+                if ($temLesaoAtiva) {
+                    $trabalhadoresLesionadosAtualmente++;
+                }
+            }
+        } catch (\Throwable $e) {
+            $trabalhadoresLesionadosAtualmente = 0;
         }
 
-        if (isset($projetosPorEstado[$estado])) {
-            $projetosPorEstado[$estado]++;
-        }
+        $totalProjetos = count($projetos);
+        $projetosEmExecucao = 0;
+        $projetosConcluidos = 0;
+        $orcamentoTotal = 0;
 
-        $orcamento = (float)($p['orcamento'] ?? 0);
-        $orcamentoTotal += $orcamento;
-
-        $topProjetosOrcamento[] = [
-            'nome' => $p['nome'] ?? 'Sem nome',
-            'orcamento' => $orcamento
+        $projetosPorEstado = [
+            'planeado' => 0,
+            'em_execucao' => 0,
+            'concluido' => 0,
+            'suspenso' => 0
         ];
-    }
 
-    usort($topProjetosOrcamento, function ($a, $b) {
-        return $b['orcamento'] <=> $a['orcamento'];
-    });
+        $topProjetosOrcamento = [];
 
-    $topProjetosOrcamento = array_slice($topProjetosOrcamento, 0, 5);
+        foreach ($projetos as $p) {
+            $estado = $p['estado'] ?? '';
 
-    $totalTrabalhadores = count($trabalhadores);
-    $trabalhadoresAtivos = 0;
-    $trabalhadoresInativos = 0;
-    $salarioTotalDiario = 0;
+            if ($estado === 'em_execucao') {
+                $projetosEmExecucao++;
+            }
 
-    foreach ($trabalhadores as $t) {
-        if (($t['estado'] ?? '') === 'ativo') {
-            $trabalhadoresAtivos++;
-        } else {
-            $trabalhadoresInativos++;
-        }
+            if ($estado === 'concluido') {
+                $projetosConcluidos++;
+            }
 
-        $salarioTotalDiario += (float)($t['salario_dia'] ?? 0);
-    }
+            if (isset($projetosPorEstado[$estado])) {
+                $projetosPorEstado[$estado]++;
+            }
 
-    $salarioMedioDiario = $totalTrabalhadores > 0 ? ($salarioTotalDiario / $totalTrabalhadores) : 0;
+            $orcamento = (float)($p['orcamento'] ?? 0);
+            $orcamentoTotal += $orcamento;
 
-    $totalEquipas = count($equipas);
-
-    $totalRecursos = count($recursos);
-    $recursosBaixoStock = 0;
-    $recursosEsgotados = 0;
-    $recursosStockNormal = 0;
-
-    foreach ($recursos as $r) {
-        $quantidade = (int)($r['quantidade'] ?? 0);
-
-        if ($quantidade === 0) {
-            $recursosEsgotados++;
-        } elseif ($quantidade <= 10) {
-            $recursosBaixoStock++;
-        } else {
-            $recursosStockNormal++;
-        }
-    }
-
-    $tarefasPorEstado = [
-        'pendente' => 0,
-        'em_progresso' => 0,
-        'concluida' => 0
-    ];
-
-    $tarefasPorPrioridade = [
-        'baixa' => 0,
-        'media' => 0,
-        'alta' => 0
-    ];
-
-    foreach ($tarefas as $tarefaItem) {
-        $estado = $tarefaItem['estado'] ?? '';
-        $prioridade = $tarefaItem['prioridade'] ?? '';
-
-        if (isset($tarefasPorEstado[$estado])) {
-            $tarefasPorEstado[$estado]++;
-        }
-
-        if (isset($tarefasPorPrioridade[$prioridade])) {
-            $tarefasPorPrioridade[$prioridade]++;
-        }
-    }
-
-    $temporal = [
-        'mes' => [],
-        'trimestre' => [],
-        'semestre' => []
-    ];
-
-    $inicializarSerie = function (&$bucket, $key) {
-        if (!isset($bucket[$key])) {
-            $bucket[$key] = [
-                'projetos' => 0,
-                'trabalhadores' => 0,
-                'equipas' => 0,
-                'recursos' => 0,
-                'tarefas' => 0,
-                'orcamento' => 0
+            $topProjetosOrcamento[] = [
+                'nome' => $p['nome'] ?? 'Sem nome',
+                'orcamento' => $orcamento
             ];
         }
-    };
 
-    $adicionarTemporal = function (&$temporal, $data, $entidade, $orcamento = 0) use ($inicializarSerie) {
-        if (empty($data) || $data === '0000-00-00' || $data === '0000-00-00 00:00:00') {
-            return;
+        usort($topProjetosOrcamento, function ($a, $b) {
+            return $b['orcamento'] <=> $a['orcamento'];
+        });
+
+        $topProjetosOrcamento = array_slice($topProjetosOrcamento, 0, 5);
+
+        $totalTrabalhadores = count($trabalhadores);
+        $trabalhadoresAtivos = 0;
+        $trabalhadoresInativos = 0;
+        $salarioTotalDiario = 0;
+
+        foreach ($trabalhadores as $t) {
+            if (($t['estado'] ?? '') === 'ativo') {
+                $trabalhadoresAtivos++;
+            } else {
+                $trabalhadoresInativos++;
+            }
+
+            $salarioTotalDiario += (float)($t['salario_dia'] ?? 0);
         }
 
-        $timestamp = strtotime($data);
-        if (!$timestamp) {
-            return;
+        $salarioMedioDiario = $totalTrabalhadores > 0 ? ($salarioTotalDiario / $totalTrabalhadores) : 0;
+
+        $totalEquipas = count($equipas);
+
+        $totalRecursos = count($recursos);
+        $recursosBaixoStock = 0;
+        $recursosEsgotados = 0;
+        $recursosStockNormal = 0;
+
+        foreach ($recursos as $r) {
+            $quantidade = (int)($r['quantidade'] ?? 0);
+
+            if ($quantidade === 0) {
+                $recursosEsgotados++;
+            } elseif ($quantidade <= 10) {
+                $recursosBaixoStock++;
+            } else {
+                $recursosStockNormal++;
+            }
         }
 
-        $ano = date('Y', $timestamp);
-        $mes = (int) date('n', $timestamp);
-
-        $mesChave = $ano . '-' . str_pad($mes, 2, '0', STR_PAD_LEFT);
-        $trimestreChave = $ano . '-T' . ceil($mes / 3);
-        $semestreChave = $ano . '-S' . ($mes <= 6 ? 1 : 2);
-
-        $inicializarSerie($temporal['mes'], $mesChave);
-        $inicializarSerie($temporal['trimestre'], $trimestreChave);
-        $inicializarSerie($temporal['semestre'], $semestreChave);
-
-        $temporal['mes'][$mesChave][$entidade]++;
-        $temporal['trimestre'][$trimestreChave][$entidade]++;
-        $temporal['semestre'][$semestreChave][$entidade]++;
-
-        if ($entidade === 'projetos') {
-            $temporal['mes'][$mesChave]['orcamento'] += $orcamento;
-            $temporal['trimestre'][$trimestreChave]['orcamento'] += $orcamento;
-            $temporal['semestre'][$semestreChave]['orcamento'] += $orcamento;
-        }
-    };
-
-    foreach ($projetos as $p) {
-        $adicionarTemporal(
-            $temporal,
-            $p['criado_em'] ?? ($p['data_inicio'] ?? null),
-            'projetos',
-            (float)($p['orcamento'] ?? 0)
-        );
-    }
-
-    foreach ($trabalhadores as $t) {
-        $adicionarTemporal($temporal, $t['criado_em'] ?? null, 'trabalhadores');
-    }
-
-    foreach ($equipas as $e) {
-        $adicionarTemporal($temporal, $e['criado_em'] ?? null, 'equipas');
-    }
-
-    foreach ($recursos as $r) {
-        $adicionarTemporal($temporal, $r['criado_em'] ?? null, 'recursos');
-    }
-
-    foreach ($tarefas as $tarefaItem) {
-        $adicionarTemporal($temporal, $tarefaItem['criado_em'] ?? null, 'tarefas');
-    }
-
-    ksort($temporal['mes']);
-    ksort($temporal['trimestre']);
-    ksort($temporal['semestre']);
-
-    $formatarTemporal = function ($bucket) {
-        return [
-            'labels' => array_keys($bucket),
-            'projetos' => array_map(fn($item) => $item['projetos'], $bucket),
-            'trabalhadores' => array_map(fn($item) => $item['trabalhadores'], $bucket),
-            'equipas' => array_map(fn($item) => $item['equipas'], $bucket),
-            'recursos' => array_map(fn($item) => $item['recursos'], $bucket),
-            'tarefas' => array_map(fn($item) => $item['tarefas'], $bucket),
-            'orcamento' => array_map(fn($item) => $item['orcamento'], $bucket)
+        $tarefasPorEstado = [
+            'pendente' => 0,
+            'em_progresso' => 0,
+            'concluida' => 0
         ];
-    };
 
-    $calcularMedia = function ($bucket, $campo) {
-        if (empty($bucket)) {
-            return 0;
+        $tarefasPorPrioridade = [
+            'baixa' => 0,
+            'media' => 0,
+            'alta' => 0
+        ];
+
+        foreach ($tarefas as $tarefaItem) {
+            $estado = $tarefaItem['estado'] ?? '';
+            $prioridade = $tarefaItem['prioridade'] ?? '';
+
+            if (isset($tarefasPorEstado[$estado])) {
+                $tarefasPorEstado[$estado]++;
+            }
+
+            if (isset($tarefasPorPrioridade[$prioridade])) {
+                $tarefasPorPrioridade[$prioridade]++;
+            }
         }
 
-        $total = array_sum(array_map(fn($item) => $item[$campo] ?? 0, $bucket));
-        return $total / count($bucket);
-    };
+        $temporal = [
+            'mes' => [],
+            'trimestre' => [],
+            'semestre' => []
+        ];
 
-    $calcularComparacaoPeriodoAnterior = function ($bucket, $campo) {
-        if (count($bucket) < 2) {
+        $inicializarSerie = function (&$bucket, $key) {
+            if (!isset($bucket[$key])) {
+                $bucket[$key] = [
+                    'projetos' => 0,
+                    'trabalhadores' => 0,
+                    'equipas' => 0,
+                    'recursos' => 0,
+                    'tarefas' => 0,
+                    'orcamento' => 0
+                ];
+            }
+        };
+
+        $adicionarTemporal = function (&$temporal, $data, $entidade, $orcamento = 0) use ($inicializarSerie) {
+            if (empty($data) || $data === '0000-00-00' || $data === '0000-00-00 00:00:00') {
+                return;
+            }
+
+            $timestamp = strtotime($data);
+            if (!$timestamp) {
+                return;
+            }
+
+            $ano = date('Y', $timestamp);
+            $mes = (int) date('n', $timestamp);
+
+            $mesChave = $ano . '-' . str_pad($mes, 2, '0', STR_PAD_LEFT);
+            $trimestreChave = $ano . '-T' . ceil($mes / 3);
+            $semestreChave = $ano . '-S' . ($mes <= 6 ? 1 : 2);
+
+            $inicializarSerie($temporal['mes'], $mesChave);
+            $inicializarSerie($temporal['trimestre'], $trimestreChave);
+            $inicializarSerie($temporal['semestre'], $semestreChave);
+
+            $temporal['mes'][$mesChave][$entidade]++;
+            $temporal['trimestre'][$trimestreChave][$entidade]++;
+            $temporal['semestre'][$semestreChave][$entidade]++;
+
+            if ($entidade === 'projetos') {
+                $temporal['mes'][$mesChave]['orcamento'] += $orcamento;
+                $temporal['trimestre'][$trimestreChave]['orcamento'] += $orcamento;
+                $temporal['semestre'][$semestreChave]['orcamento'] += $orcamento;
+            }
+        };
+
+        foreach ($projetos as $p) {
+            $adicionarTemporal(
+                $temporal,
+                $p['criado_em'] ?? ($p['data_inicio'] ?? null),
+                'projetos',
+                (float)($p['orcamento'] ?? 0)
+            );
+        }
+
+        foreach ($trabalhadores as $t) {
+            $adicionarTemporal($temporal, $t['criado_em'] ?? null, 'trabalhadores');
+        }
+
+        foreach ($equipas as $e) {
+            $adicionarTemporal($temporal, $e['criado_em'] ?? null, 'equipas');
+        }
+
+        foreach ($recursos as $r) {
+            $adicionarTemporal($temporal, $r['criado_em'] ?? null, 'recursos');
+        }
+
+        foreach ($tarefas as $tarefaItem) {
+            $adicionarTemporal($temporal, $tarefaItem['criado_em'] ?? null, 'tarefas');
+        }
+
+        ksort($temporal['mes']);
+        ksort($temporal['trimestre']);
+        ksort($temporal['semestre']);
+
+        $formatarTemporal = function ($bucket) {
             return [
-                'atual' => 0,
-                'anterior' => 0,
-                'variacao_percentual' => 0
+                'labels' => array_keys($bucket),
+                'projetos' => array_map(fn($item) => $item['projetos'], $bucket),
+                'trabalhadores' => array_map(fn($item) => $item['trabalhadores'], $bucket),
+                'equipas' => array_map(fn($item) => $item['equipas'], $bucket),
+                'recursos' => array_map(fn($item) => $item['recursos'], $bucket),
+                'tarefas' => array_map(fn($item) => $item['tarefas'], $bucket),
+                'orcamento' => array_map(fn($item) => $item['orcamento'], $bucket)
             ];
-        }
+        };
 
-        $valores = array_values($bucket);
-        $atual = (float)($valores[count($valores) - 1][$campo] ?? 0);
-        $anterior = (float)($valores[count($valores) - 2][$campo] ?? 0);
+        $calcularMedia = function ($bucket, $campo) {
+            if (empty($bucket)) {
+                return 0;
+            }
 
-        if ($anterior == 0) {
-            $variacao = $atual > 0 ? 100 : 0;
-        } else {
-            $variacao = (($atual - $anterior) / $anterior) * 100;
-        }
+            $total = array_sum(array_map(fn($item) => $item[$campo] ?? 0, $bucket));
+            return $total / count($bucket);
+        };
 
-        return [
-            'atual' => $atual,
-            'anterior' => $anterior,
-            'variacao_percentual' => $variacao
-        ];
-    };
+        $calcularComparacaoPeriodoAnterior = function ($bucket, $campo) {
+            if (count($bucket) < 2) {
+                return [
+                    'atual' => 0,
+                    'anterior' => 0,
+                    'variacao_percentual' => 0
+                ];
+            }
 
-    $medias = [
-        'mes' => [
-            'projetos' => $calcularMedia($temporal['mes'], 'projetos'),
-            'trabalhadores' => $calcularMedia($temporal['mes'], 'trabalhadores'),
-            'equipas' => $calcularMedia($temporal['mes'], 'equipas'),
-            'recursos' => $calcularMedia($temporal['mes'], 'recursos'),
-            'tarefas' => $calcularMedia($temporal['mes'], 'tarefas'),
-            'orcamento' => $calcularMedia($temporal['mes'], 'orcamento')
-        ],
-        'trimestre' => [
-            'projetos' => $calcularMedia($temporal['trimestre'], 'projetos'),
-            'trabalhadores' => $calcularMedia($temporal['trimestre'], 'trabalhadores'),
-            'equipas' => $calcularMedia($temporal['trimestre'], 'equipas'),
-            'recursos' => $calcularMedia($temporal['trimestre'], 'recursos'),
-            'tarefas' => $calcularMedia($temporal['trimestre'], 'tarefas'),
-            'orcamento' => $calcularMedia($temporal['trimestre'], 'orcamento')
-        ],
-        'semestre' => [
-            'projetos' => $calcularMedia($temporal['semestre'], 'projetos'),
-            'trabalhadores' => $calcularMedia($temporal['semestre'], 'trabalhadores'),
-            'equipas' => $calcularMedia($temporal['semestre'], 'equipas'),
-            'recursos' => $calcularMedia($temporal['semestre'], 'recursos'),
-            'tarefas' => $calcularMedia($temporal['semestre'], 'tarefas'),
-            'orcamento' => $calcularMedia($temporal['semestre'], 'orcamento')
-        ]
-    ];
+            $valores = array_values($bucket);
+            $atual = (float)($valores[count($valores) - 1][$campo] ?? 0);
+            $anterior = (float)($valores[count($valores) - 2][$campo] ?? 0);
 
-    $comparacoes = [
-        'mes' => [
-            'projetos' => $calcularComparacaoPeriodoAnterior($temporal['mes'], 'projetos'),
-            'tarefas' => $calcularComparacaoPeriodoAnterior($temporal['mes'], 'tarefas'),
-            'orcamento' => $calcularComparacaoPeriodoAnterior($temporal['mes'], 'orcamento')
-        ],
-        'trimestre' => [
-            'projetos' => $calcularComparacaoPeriodoAnterior($temporal['trimestre'], 'projetos'),
-            'tarefas' => $calcularComparacaoPeriodoAnterior($temporal['trimestre'], 'tarefas'),
-            'orcamento' => $calcularComparacaoPeriodoAnterior($temporal['trimestre'], 'orcamento')
-        ],
-        'semestre' => [
-            'projetos' => $calcularComparacaoPeriodoAnterior($temporal['semestre'], 'projetos'),
-            'tarefas' => $calcularComparacaoPeriodoAnterior($temporal['semestre'], 'tarefas'),
-            'orcamento' => $calcularComparacaoPeriodoAnterior($temporal['semestre'], 'orcamento')
-        ]
-    ];
+            if ($anterior == 0) {
+                $variacao = $atual > 0 ? 100 : 0;
+            } else {
+                $variacao = (($atual - $anterior) / $anterior) * 100;
+            }
 
-    $this->view->dashboard = [
-        'total_projetos' => $totalProjetos,
-        'projetos_em_execucao' => $projetosEmExecucao,
-        'projetos_concluidos' => $projetosConcluidos,
-        'orcamento_total' => $orcamentoTotal,
-        'total_trabalhadores' => $totalTrabalhadores,
-        'trabalhadores_ativos' => $trabalhadoresAtivos,
-        'trabalhadores_inativos' => $trabalhadoresInativos,
-        'salario_medio_diario' => $salarioMedioDiario,
-        'total_equipas' => $totalEquipas,
-        'total_recursos' => $totalRecursos,
-        'recursos_baixo_stock' => $recursosBaixoStock,
-        'recursos_esgotados' => $recursosEsgotados,
-        'recursos_stock_normal' => $recursosStockNormal,
-        'total_tarefas' => count($tarefas),
-        'medias' => $medias,
-        'comparacoes' => $comparacoes,
+            return [
+                'atual' => $atual,
+                'anterior' => $anterior,
+                'variacao_percentual' => $variacao
+            ];
+        };
 
-        'graficos' => [
-            'projetos_por_estado' => [
-                'labels' => ['Planeado', 'Em execução', 'Concluído', 'Suspenso'],
-                'values' => [
-                    $projetosPorEstado['planeado'],
-                    $projetosPorEstado['em_execucao'],
-                    $projetosPorEstado['concluido'],
-                    $projetosPorEstado['suspenso']
-                ]
+        $medias = [
+            'mes' => [
+                'projetos' => $calcularMedia($temporal['mes'], 'projetos'),
+                'trabalhadores' => $calcularMedia($temporal['mes'], 'trabalhadores'),
+                'equipas' => $calcularMedia($temporal['mes'], 'equipas'),
+                'recursos' => $calcularMedia($temporal['mes'], 'recursos'),
+                'tarefas' => $calcularMedia($temporal['mes'], 'tarefas'),
+                'orcamento' => $calcularMedia($temporal['mes'], 'orcamento')
             ],
-            'tarefas_por_estado' => [
-                'labels' => ['Pendente', 'Em progresso', 'Concluída'],
-                'values' => [
-                    $tarefasPorEstado['pendente'],
-                    $tarefasPorEstado['em_progresso'],
-                    $tarefasPorEstado['concluida']
-                ]
+            'trimestre' => [
+                'projetos' => $calcularMedia($temporal['trimestre'], 'projetos'),
+                'trabalhadores' => $calcularMedia($temporal['trimestre'], 'trabalhadores'),
+                'equipas' => $calcularMedia($temporal['trimestre'], 'equipas'),
+                'recursos' => $calcularMedia($temporal['trimestre'], 'recursos'),
+                'tarefas' => $calcularMedia($temporal['trimestre'], 'tarefas'),
+                'orcamento' => $calcularMedia($temporal['trimestre'], 'orcamento')
             ],
-            'tarefas_por_prioridade' => [
-                'labels' => ['Baixa', 'Média', 'Alta'],
-                'values' => [
-                    $tarefasPorPrioridade['baixa'],
-                    $tarefasPorPrioridade['media'],
-                    $tarefasPorPrioridade['alta']
-                ]
-            ],
-            'recursos_por_stock' => [
-                'labels' => ['Stock normal', 'Baixo stock', 'Esgotados'],
-                'values' => [
-                    $recursosStockNormal,
-                    $recursosBaixoStock,
-                    $recursosEsgotados
-                ]
-            ],
-            'top_projetos_orcamento' => [
-                'labels' => array_map(function ($item) {
-                    return $item['nome'];
-                }, $topProjetosOrcamento),
-                'values' => array_map(function ($item) {
-                    return $item['orcamento'];
-                }, $topProjetosOrcamento)
-            ],
-            'temporais' => [
-                'mes' => $formatarTemporal($temporal['mes']),
-                'trimestre' => $formatarTemporal($temporal['trimestre']),
-                'semestre' => $formatarTemporal($temporal['semestre'])
+            'semestre' => [
+                'projetos' => $calcularMedia($temporal['semestre'], 'projetos'),
+                'trabalhadores' => $calcularMedia($temporal['semestre'], 'trabalhadores'),
+                'equipas' => $calcularMedia($temporal['semestre'], 'equipas'),
+                'recursos' => $calcularMedia($temporal['semestre'], 'recursos'),
+                'tarefas' => $calcularMedia($temporal['semestre'], 'tarefas'),
+                'orcamento' => $calcularMedia($temporal['semestre'], 'orcamento')
             ]
-        ]
-    ];
+        ];
 
-    $this->render('dashboard', 'layout_dashboard');
-}
+        $comparacoes = [
+            'mes' => [
+                'projetos' => $calcularComparacaoPeriodoAnterior($temporal['mes'], 'projetos'),
+                'tarefas' => $calcularComparacaoPeriodoAnterior($temporal['mes'], 'tarefas'),
+                'orcamento' => $calcularComparacaoPeriodoAnterior($temporal['mes'], 'orcamento')
+            ],
+            'trimestre' => [
+                'projetos' => $calcularComparacaoPeriodoAnterior($temporal['trimestre'], 'projetos'),
+                'tarefas' => $calcularComparacaoPeriodoAnterior($temporal['trimestre'], 'tarefas'),
+                'orcamento' => $calcularComparacaoPeriodoAnterior($temporal['trimestre'], 'orcamento')
+            ],
+            'semestre' => [
+                'projetos' => $calcularComparacaoPeriodoAnterior($temporal['semestre'], 'projetos'),
+                'tarefas' => $calcularComparacaoPeriodoAnterior($temporal['semestre'], 'tarefas'),
+                'orcamento' => $calcularComparacaoPeriodoAnterior($temporal['semestre'], 'orcamento')
+            ]
+        ];
+
+        $this->view->dashboard = [
+            'total_projetos' => $totalProjetos,
+            'projetos_em_execucao' => $projetosEmExecucao,
+            'projetos_concluidos' => $projetosConcluidos,
+            'orcamento_total' => $orcamentoTotal,
+            'total_trabalhadores' => $totalTrabalhadores,
+            'trabalhadores_ativos' => $trabalhadoresAtivos,
+            'trabalhadores_inativos' => $trabalhadoresInativos,
+            'trabalhadores_lesionados_ativos' => $trabalhadoresLesionadosAtualmente,
+            'salario_medio_diario' => $salarioMedioDiario,
+            'total_equipas' => $totalEquipas,
+            'total_recursos' => $totalRecursos,
+            'recursos_baixo_stock' => $recursosBaixoStock,
+            'recursos_esgotados' => $recursosEsgotados,
+            'recursos_stock_normal' => $recursosStockNormal,
+            'total_tarefas' => count($tarefas),
+            'medias' => $medias,
+            'comparacoes' => $comparacoes,
+
+            'graficos' => [
+                'projetos_por_estado' => [
+                    'labels' => ['Planeado', 'Em execução', 'Concluído', 'Suspenso'],
+                    'values' => [
+                        $projetosPorEstado['planeado'],
+                        $projetosPorEstado['em_execucao'],
+                        $projetosPorEstado['concluido'],
+                        $projetosPorEstado['suspenso']
+                    ]
+                ],
+                'tarefas_por_estado' => [
+                    'labels' => ['Pendente', 'Em progresso', 'Concluída'],
+                    'values' => [
+                        $tarefasPorEstado['pendente'],
+                        $tarefasPorEstado['em_progresso'],
+                        $tarefasPorEstado['concluida']
+                    ]
+                ],
+                'tarefas_por_prioridade' => [
+                    'labels' => ['Baixa', 'Média', 'Alta'],
+                    'values' => [
+                        $tarefasPorPrioridade['baixa'],
+                        $tarefasPorPrioridade['media'],
+                        $tarefasPorPrioridade['alta']
+                    ]
+                ],
+                'recursos_por_stock' => [
+                    'labels' => ['Stock normal', 'Baixo stock', 'Esgotados'],
+                    'values' => [
+                        $recursosStockNormal,
+                        $recursosBaixoStock,
+                        $recursosEsgotados
+                    ]
+                ],
+                'top_projetos_orcamento' => [
+                    'labels' => array_map(function ($item) {
+                        return $item['nome'];
+                    }, $topProjetosOrcamento),
+                    'values' => array_map(function ($item) {
+                        return $item['orcamento'];
+                    }, $topProjetosOrcamento)
+                ],
+                'temporais' => [
+                    'mes' => $formatarTemporal($temporal['mes']),
+                    'trimestre' => $formatarTemporal($temporal['trimestre']),
+                    'semestre' => $formatarTemporal($temporal['semestre'])
+                ]
+            ]
+        ];
+
+        $this->render('dashboard', 'layout_dashboard');
+    }
 
     # Equipas
     public function equipas()
@@ -710,7 +734,15 @@ class MainappController extends Action
         $this->validarAutenticacao();
 
         $trabalhador = Container::getModel('Trabalhador');
-        $this->view->trabalhadores = $trabalhador->listarPorUtilizador($_SESSION['id']);
+        $lesao = Container::getModel('LesaoTrabalhador');
+
+        $trabalhadores = $trabalhador->listarPorUtilizador($_SESSION['id']);
+
+        foreach ($trabalhadores as &$item) {
+            $item['lesoes'] = $lesao->listarPorTrabalhador($item['id'], $_SESSION['id']);
+        }
+
+        $this->view->trabalhadores = $trabalhadores;
 
         $this->render('trabalhadores', 'layout_dashboard');
     }
@@ -870,6 +902,137 @@ class MainappController extends Action
             $trabalhador = Container::getModel('Trabalhador');
             $trabalhador->eliminar($id, $_SESSION['id']);
             Flash::set('success', 'Trabalhador eliminado com sucesso.');
+        }
+
+        header('Location: /trabalhadores');
+        exit;
+    }
+
+    public function adicionarLesaoTrabalhador()
+    {
+        $this->validarAutenticacao();
+
+        $trabalhadorId = $_POST['trabalhador_id'] ?? null;
+        $titulo = trim($_POST['titulo'] ?? '');
+        $descricao = trim($_POST['descricao'] ?? '');
+        $dataLesao = $_POST['data_lesao'] ?? '';
+        $dataRegressoPrevista = $_POST['data_regresso_prevista'] ?? null;
+        $dataRegressoReal = $_POST['data_regresso_real'] ?? null;
+        $estado = $_POST['estado'] ?? 'ativa';
+        $observacoes = trim($_POST['observacoes'] ?? '');
+
+        if (!$trabalhadorId) {
+            Flash::set('warning', 'Trabalhador inválido.');
+            header('Location: /trabalhadores');
+            exit;
+        }
+
+        if ($titulo === '') {
+            Flash::set('warning', 'O título da lesão é obrigatório.');
+            header('Location: /trabalhadores');
+            exit;
+        }
+
+        if ($dataLesao === '') {
+            Flash::set('warning', 'A data da lesão é obrigatória.');
+            header('Location: /trabalhadores');
+            exit;
+        }
+
+        $trabalhador = Container::getModel('Trabalhador');
+        $trabalhadorExistente = $trabalhador->obterPorIdEUtilizador($trabalhadorId, $_SESSION['id']);
+
+        if (!$trabalhadorExistente) {
+            Flash::set('danger', 'Não tem permissão para associar lesões a este trabalhador.');
+            header('Location: /trabalhadores');
+            exit;
+        }
+
+        $lesao = Container::getModel('LesaoTrabalhador');
+        $lesao->__set('trabalhador_id', $trabalhadorId);
+        $lesao->__set('utilizador_id', $_SESSION['id']);
+        $lesao->__set('titulo', $titulo);
+        $lesao->__set('descricao', $descricao);
+        $lesao->__set('data_lesao', $dataLesao);
+        $lesao->__set('data_regresso_prevista', $dataRegressoPrevista);
+        $lesao->__set('data_regresso_real', $dataRegressoReal);
+        $lesao->__set('estado', $estado);
+        $lesao->__set('observacoes', $observacoes);
+
+        $lesao->criar();
+
+        Flash::set('success', 'Lesão registada com sucesso.');
+        header('Location: /trabalhadores');
+        exit;
+    }
+
+    public function editarLesaoTrabalhador()
+    {
+        $this->validarAutenticacao();
+
+        $id = $_POST['id'] ?? null;
+        $titulo = trim($_POST['titulo'] ?? '');
+        $descricao = trim($_POST['descricao'] ?? '');
+        $dataLesao = $_POST['data_lesao'] ?? '';
+        $dataRegressoPrevista = $_POST['data_regresso_prevista'] ?? null;
+        $dataRegressoReal = $_POST['data_regresso_real'] ?? null;
+        $estado = $_POST['estado'] ?? 'ativa';
+        $observacoes = trim($_POST['observacoes'] ?? '');
+
+        if (!$id) {
+            Flash::set('warning', 'Lesão inválida.');
+            header('Location: /trabalhadores');
+            exit;
+        }
+
+        if ($titulo === '') {
+            Flash::set('warning', 'O título da lesão é obrigatório.');
+            header('Location: /trabalhadores');
+            exit;
+        }
+
+        if ($dataLesao === '') {
+            Flash::set('warning', 'A data da lesão é obrigatória.');
+            header('Location: /trabalhadores');
+            exit;
+        }
+
+        $lesao = Container::getModel('LesaoTrabalhador');
+        $lesaoExistente = $lesao->obterPorIdEUtilizador($id, $_SESSION['id']);
+
+        if (!$lesaoExistente) {
+            Flash::set('danger', 'Não tem permissão para editar esta lesão.');
+            header('Location: /trabalhadores');
+            exit;
+        }
+
+        $lesao->__set('id', $id);
+        $lesao->__set('utilizador_id', $_SESSION['id']);
+        $lesao->__set('titulo', $titulo);
+        $lesao->__set('descricao', $descricao);
+        $lesao->__set('data_lesao', $dataLesao);
+        $lesao->__set('data_regresso_prevista', $dataRegressoPrevista);
+        $lesao->__set('data_regresso_real', $dataRegressoReal);
+        $lesao->__set('estado', $estado);
+        $lesao->__set('observacoes', $observacoes);
+
+        $lesao->editar();
+
+        Flash::set('success', 'Lesão atualizada com sucesso.');
+        header('Location: /trabalhadores');
+        exit;
+    }
+
+    public function eliminarLesaoTrabalhador()
+    {
+        $this->validarAutenticacao();
+
+        $id = $_GET['id'] ?? null;
+
+        if ($id) {
+            $lesao = Container::getModel('LesaoTrabalhador');
+            $lesao->eliminar($id, $_SESSION['id']);
+            Flash::set('success', 'Lesão eliminada com sucesso.');
         }
 
         header('Location: /trabalhadores');

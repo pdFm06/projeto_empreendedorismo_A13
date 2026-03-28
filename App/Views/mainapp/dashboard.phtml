@@ -239,6 +239,18 @@
 
     <div class="col-12 col-md-6 col-lg-3">
       <div class="dashboard-card">
+        <div class="dashboard-title">Trabalhadores lesionados</div>
+        <div class="dashboard-number">
+          <?= $this->view->dashboard['trabalhadores_lesionados_ativos'] ?? 0 ?>
+        </div>
+        <div class="dashboard-subtext">
+          Com pelo menos uma lesão ativa
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="dashboard-card">
         <div class="dashboard-title">Recursos</div>
         <div class="dashboard-number"><?= $this->view->dashboard['total_recursos'] ?></div>
         <div class="dashboard-subtext">

@@ -41,6 +41,11 @@
     height: 100%;
   }
 
+  .project-card.worker-has-active-injury {
+    border: 1px solid rgba(220, 53, 69, 0.28);
+    box-shadow: 0 8px 30px rgba(220, 53, 69, 0.10);
+  }
+
   .muted {
     color: var(--text-muted, #6b7280);
   }
@@ -61,6 +66,47 @@
   .status-inativo {
     background: #f8d7da;
     color: #721c24;
+  }
+
+  .worker-alert {
+    margin-top: 0.85rem;
+    padding: 0.7rem 0.85rem;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    background: rgba(220, 53, 69, 0.12);
+    color: #b02a37;
+    border: 1px solid rgba(220, 53, 69, 0.22);
+  }
+
+  .injury-box {
+    border: 1px solid var(--border-color, rgba(0,0,0,0.08));
+    border-radius: 12px;
+    padding: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  .injury-status {
+    display: inline-block;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .injury-ativa {
+    background: #f8d7da;
+    color: #721c24;
+  }
+
+  .injury-em_recuperacao {
+    background: #fff3cd;
+    color: #856404;
+  }
+
+  .injury-resolvida {
+    background: #d4edda;
+    color: #155724;
   }
 
   .modal-content,
@@ -124,8 +170,21 @@
   <div class="row g-4 mb-5" id="PessoasGrid">
     <?php if (!empty($this->view->trabalhadores)) { ?>
       <?php foreach ($this->view->trabalhadores as $trabalhador) { ?>
+        <?php
+          $temLesaoAtiva = false;
+
+          if (!empty($trabalhador['lesoes'])) {
+            foreach ($trabalhador['lesoes'] as $lesaoTmp) {
+              if (($lesaoTmp['estado'] ?? '') === 'ativa') {
+                $temLesaoAtiva = true;
+                break;
+              }
+            }
+          }
+        ?>
+
         <div class="col-md-6 col-lg-4">
-          <div class="project-card person-card p-3">
+          <div class="project-card person-card p-3 <?= $temLesaoAtiva ? 'worker-has-active-injury' : '' ?>">
             <div class="d-flex align-items-center gap-3">
               <div class="avatar">
                 <?php
@@ -173,6 +232,114 @@
               </div>
             </div>
 
+            <?php if ($temLesaoAtiva) { ?>
+              <div class="worker-alert">
+                Este trabalhador tem uma lesão ativa.
+              </div>
+            <?php } ?>
+
+            <div class="mt-3">
+              <div class="d-flex justify-content-between align-items-center">
+                <strong>Histórico de lesões</strong>
+
+                <button
+                  class="btn btn-sm btn-outline-primary open-injury-create-btn"
+                  data-bs-toggle="modal"
+                  data-bs-target="#injuryModal"
+                  data-trabalhador-id="<?= $trabalhador['id'] ?>"
+                  data-trabalhador-nome="<?= htmlspecialchars($trabalhador['nome']) ?>"
+                  type="button"
+                >
+                  + Nova lesão
+                </button>
+              </div>
+
+              <?php if (!empty($trabalhador['lesoes'])) { ?>
+                <div class="mt-2">
+                  <?php foreach ($trabalhador['lesoes'] as $lesao) { ?>
+                    <div class="injury-box">
+                      <div class="d-flex justify-content-between align-items-start gap-2">
+                        <div>
+                          <div style="font-weight:700;">
+                            <?= htmlspecialchars($lesao['titulo']) ?>
+                          </div>
+
+                          <div class="mt-1">
+                            <span class="injury-status injury-<?= htmlspecialchars($lesao['estado']) ?>">
+                              <?= ucfirst(str_replace('_', ' ', htmlspecialchars($lesao['estado']))) ?>
+                            </span>
+                          </div>
+
+                          <div class="muted mt-2" style="font-size:.92rem;">
+                            <strong>Data da lesão:</strong>
+                            <?= htmlspecialchars($lesao['data_lesao']) ?>
+                          </div>
+
+                          <?php if (!empty($lesao['data_regresso_prevista'])) { ?>
+                            <div class="muted" style="font-size:.92rem;">
+                              <strong>Regresso previsto:</strong>
+                              <?= htmlspecialchars($lesao['data_regresso_prevista']) ?>
+                            </div>
+                          <?php } ?>
+
+                          <?php if (!empty($lesao['data_regresso_real'])) { ?>
+                            <div class="muted" style="font-size:.92rem;">
+                              <strong>Regresso real:</strong>
+                              <?= htmlspecialchars($lesao['data_regresso_real']) ?>
+                            </div>
+                          <?php } ?>
+
+                          <?php if (!empty($lesao['descricao'])) { ?>
+                            <div class="muted mt-2" style="font-size:.92rem;">
+                              <?= htmlspecialchars($lesao['descricao']) ?>
+                            </div>
+                          <?php } ?>
+
+                          <?php if (!empty($lesao['observacoes'])) { ?>
+                            <div class="muted mt-1" style="font-size:.92rem;">
+                              <strong>Observações:</strong>
+                              <?= htmlspecialchars($lesao['observacoes']) ?>
+                            </div>
+                          <?php } ?>
+                        </div>
+
+                        <div class="text-end">
+                          <button
+                            class="btn btn-sm btn-outline-secondary edit-injury-btn mb-2"
+                            data-bs-toggle="modal"
+                            data-bs-target="#injuryModal"
+                            data-id="<?= $lesao['id'] ?>"
+                            data-trabalhador-id="<?= $trabalhador['id'] ?>"
+                            data-trabalhador-nome="<?= htmlspecialchars($trabalhador['nome']) ?>"
+                            data-titulo="<?= htmlspecialchars($lesao['titulo']) ?>"
+                            data-descricao="<?= htmlspecialchars($lesao['descricao'] ?? '') ?>"
+                            data-data-lesao="<?= htmlspecialchars($lesao['data_lesao']) ?>"
+                            data-data-regresso-prevista="<?= htmlspecialchars($lesao['data_regresso_prevista'] ?? '') ?>"
+                            data-data-regresso-real="<?= htmlspecialchars($lesao['data_regresso_real'] ?? '') ?>"
+                            data-estado="<?= htmlspecialchars($lesao['estado']) ?>"
+                            data-observacoes="<?= htmlspecialchars($lesao['observacoes'] ?? '') ?>"
+                            type="button"
+                          >
+                            Editar
+                          </button>
+
+                          <a
+                            href="/eliminar_lesao_trabalhador?id=<?= $lesao['id'] ?>"
+                            class="btn btn-sm btn-outline-danger d-block"
+                            onclick="return confirm('Eliminar este registo de lesão?')"
+                          >
+                            Eliminar
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  <?php } ?>
+                </div>
+              <?php } else { ?>
+                <div class="muted mt-2">Sem lesões registadas para este trabalhador.</div>
+              <?php } ?>
+            </div>
+
             <div class="d-flex gap-2 mt-3">
               <button
                 class="btn btn-sm btn-outline-secondary edit-worker-btn"
@@ -216,13 +383,7 @@
   </footer>
 </div>
 
-<!-- Modal: Criar / Editar Trabalhador -->
-<div
-  class="modal fade"
-  id="createPersonModal"
-  tabindex="-1"
-  aria-hidden="true"
->
+<div class="modal fade" id="createPersonModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
@@ -283,11 +444,7 @@
       </div>
 
       <div class="modal-footer">
-        <button
-          class="btn btn-secondary"
-          data-bs-dismiss="modal"
-          type="button"
-        >
+        <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">
           Cancelar
         </button>
 
@@ -301,12 +458,96 @@
           Eliminar
         </a>
 
+        <button class="btn btn-primary" id="savePersonBtn" type="submit" form="personForm">
+          Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="injuryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="injuryModalTitle">Nova Lesão</h5>
         <button
-          class="btn btn-primary"
-          id="savePersonBtn"
-          type="submit"
-          form="personForm"
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+        ></button>
+      </div>
+
+      <div class="modal-body">
+        <form id="injuryForm" method="post" action="/adicionar_lesao_trabalhador">
+          <input type="hidden" id="injuryId" name="id" />
+          <input type="hidden" id="injuryWorkerId" name="trabalhador_id" />
+
+          <div class="mb-3">
+            <label class="form-label" for="injuryWorkerName">Trabalhador</label>
+            <input id="injuryWorkerName" class="form-control" readonly />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="injuryTitle">Título</label>
+            <input id="injuryTitle" name="titulo" class="form-control" required />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="injuryDescription">Descrição</label>
+            <textarea id="injuryDescription" name="descricao" class="form-control" rows="3"></textarea>
+          </div>
+
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="form-label" for="injuryDate">Data da lesão</label>
+              <input id="injuryDate" name="data_lesao" type="date" class="form-control" required />
+            </div>
+
+            <div class="col-md-4 mb-3">
+              <label class="form-label" for="injuryReturnExpected">Regresso previsto</label>
+              <input id="injuryReturnExpected" name="data_regresso_prevista" type="date" class="form-control" />
+            </div>
+
+            <div class="col-md-4 mb-3">
+              <label class="form-label" for="injuryReturnReal">Regresso real</label>
+              <input id="injuryReturnReal" name="data_regresso_real" type="date" class="form-control" />
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="injuryStatus">Estado</label>
+            <select id="injuryStatus" name="estado" class="form-control">
+              <option value="ativa">Ativa</option>
+              <option value="em_recuperacao">Em recuperação</option>
+              <option value="resolvida">Resolvida</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="injuryNotes">Observações</label>
+            <textarea id="injuryNotes" name="observacoes" class="form-control" rows="3"></textarea>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">
+          Cancelar
+        </button>
+
+        <a
+          href="#"
+          class="btn btn-danger"
+          id="deleteInjuryBtn"
+          style="display: none"
+          onclick="return confirm('Eliminar este registo de lesão?')"
         >
+          Eliminar
+        </a>
+
+        <button class="btn btn-primary" type="submit" form="injuryForm">
           Guardar
         </button>
       </div>
@@ -353,6 +594,52 @@
 
       deleteBtn.style.display = "inline-block";
       deleteBtn.href = "/eliminar_trabalhador?id=" + (this.dataset.id || "");
+    });
+  });
+
+  const injuryForm = document.getElementById("injuryForm");
+  const injuryModalTitle = document.getElementById("injuryModalTitle");
+  const deleteInjuryBtn = document.getElementById("deleteInjuryBtn");
+
+  document.querySelectorAll(".open-injury-create-btn").forEach((btn) => {
+    btn.addEventListener("click", function () {
+      injuryModalTitle.textContent = "Nova Lesão";
+      injuryForm.action = "/adicionar_lesao_trabalhador";
+
+      document.getElementById("injuryId").value = "";
+      document.getElementById("injuryWorkerId").value = this.dataset.trabalhadorId || "";
+      document.getElementById("injuryWorkerName").value = this.dataset.trabalhadorNome || "";
+      document.getElementById("injuryTitle").value = "";
+      document.getElementById("injuryDescription").value = "";
+      document.getElementById("injuryDate").value = "";
+      document.getElementById("injuryReturnExpected").value = "";
+      document.getElementById("injuryReturnReal").value = "";
+      document.getElementById("injuryStatus").value = "ativa";
+      document.getElementById("injuryNotes").value = "";
+
+      deleteInjuryBtn.style.display = "none";
+      deleteInjuryBtn.href = "#";
+    });
+  });
+
+  document.querySelectorAll(".edit-injury-btn").forEach((btn) => {
+    btn.addEventListener("click", function () {
+      injuryModalTitle.textContent = "Editar Lesão";
+      injuryForm.action = "/editar_lesao_trabalhador";
+
+      document.getElementById("injuryId").value = this.dataset.id || "";
+      document.getElementById("injuryWorkerId").value = this.dataset.trabalhadorId || "";
+      document.getElementById("injuryWorkerName").value = this.dataset.trabalhadorNome || "";
+      document.getElementById("injuryTitle").value = this.dataset.titulo || "";
+      document.getElementById("injuryDescription").value = this.dataset.descricao || "";
+      document.getElementById("injuryDate").value = this.dataset.dataLesao || "";
+      document.getElementById("injuryReturnExpected").value = this.dataset.dataRegressoPrevista || "";
+      document.getElementById("injuryReturnReal").value = this.dataset.dataRegressoReal || "";
+      document.getElementById("injuryStatus").value = this.dataset.estado || "ativa";
+      document.getElementById("injuryNotes").value = this.dataset.observacoes || "";
+
+      deleteInjuryBtn.style.display = "inline-block";
+      deleteInjuryBtn.href = "/eliminar_lesao_trabalhador?id=" + (this.dataset.id || "");
     });
   });
 </script>

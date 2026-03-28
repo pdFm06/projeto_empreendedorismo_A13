@@ -192,6 +192,24 @@ class Route extends Bootstrap {
             'action' => 'eliminarTrabalhador'
         );
 
+        $routes['adicionar_lesao_trabalhador'] = array(
+            'route' => '/adicionar_lesao_trabalhador',
+            'controller' => 'mainappController',
+            'action' => 'adicionarLesaoTrabalhador'
+        );
+
+        $routes['editar_lesao_trabalhador'] = array(
+            'route' => '/editar_lesao_trabalhador',
+            'controller' => 'mainappController',
+            'action' => 'editarLesaoTrabalhador'
+        );
+
+        $routes['eliminar_lesao_trabalhador'] = array(
+            'route' => '/eliminar_lesao_trabalhador',
+            'controller' => 'mainappController',
+            'action' => 'eliminarLesaoTrabalhador'
+        );
+
         #Projetos
 
         $routes['projetos'] = array(
