@@ -127,6 +127,10 @@ $relatorioIa = $_SESSION['relatorio_projeto_ia_' . $projeto['id']] ?? null;
     <div class="d-flex gap-2 flex-wrap">
       <a href="/projetos" class="btn btn-outline-secondary">Voltar</a>
 
+      <a href="/exportar_relatorio_projeto_pdf?id=<?= $projeto['id'] ?>" class="btn btn-outline-danger">
+        Exportar PDF
+      </a>
+
       <form method="post" action="/gerar_relatorio_projeto_ia">
         <input type="hidden" name="projeto_id" value="<?= $projeto['id'] ?>">
         <button type="submit" class="btn btn-primary">Gerar relatório IA</button>

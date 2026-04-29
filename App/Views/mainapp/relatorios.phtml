@@ -264,11 +264,21 @@
           Gere um resumo executivo automático com base nos dados atuais da sua empresa.
         </p>
 
-        <form method="post" action="/gerar_relatorio_ia">
-          <button class="btn btn-primary w-100 export-btn" type="submit">
-            Gerar relatório com IA
-          </button>
-        </form>
+        <div class="d-grid gap-2">
+          <form method="post" action="/gerar_relatorio_ia">
+            <button class="btn btn-primary w-100 export-btn" type="submit">
+              Gerar relatório com IA
+            </button>
+          </form>
+
+          <a
+            href="/exportar_relatorio_ia_pdf"
+            class="btn btn-outline-danger w-100 export-btn <?= empty($_SESSION['relatorio_ia']) ? 'disabled' : '' ?>"
+            <?= empty($_SESSION['relatorio_ia']) ? 'aria-disabled="true"' : '' ?>
+          >
+            Exportar relatório IA (PDF)
+          </a>
+        </div>
 
         <div class="ai-note mt-3">
           O relatório inclui resumo executivo, pontos positivos, riscos, prioridades recomendadas

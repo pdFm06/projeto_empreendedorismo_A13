@@ -2531,4 +2531,400 @@ class MainappController extends Action
         header('Location: /relatorio_projeto?id=' . $id);
         exit;
     }
+
+    public function exportarRelatorioProjetoPdf()
+    {
+        $this->validarAutenticacao();
+
+        $id = $_GET['id'] ?? null;
+
+        if (!$id) {
+            \App\Lib\Flash::set('warning', 'Projeto inválido.');
+            header('Location: /projetos');
+            exit;
+        }
+
+        $projetoModel = \MF\Model\Container::getModel('Projeto');
+        $recursoModel = \MF\Model\Container::getModel('Recurso');
+        $tarefaModel = \MF\Model\Container::getModel('Tarefa');
+
+        $projeto = $projetoModel->obterPorIdEUtilizador($id, $_SESSION['id']);
+
+        if (!$projeto) {
+            \App\Lib\Flash::set('danger', 'Não tem permissão para exportar este projeto.');
+            header('Location: /projetos');
+            exit;
+        }
+
+        $equipas = $projetoModel->listarEquipas($id);
+        $recursos = $recursoModel->listarPorProjeto($id);
+        $tarefas = $tarefaModel->listarPorProjeto($id, $_SESSION['id']);
+        $relatorioIa = $_SESSION['relatorio_projeto_ia_' . $id] ?? null;
+
+        $tarefasPendentes = 0;
+        $tarefasEmProgresso = 0;
+        $tarefasConcluidas = 0;
+        $tarefasAltaPrioridade = 0;
+        $totalRecursosAfetados = 0;
+
+        foreach ($tarefas as $tarefa) {
+            if (($tarefa['estado'] ?? '') === 'pendente') {
+                $tarefasPendentes++;
+            } elseif (($tarefa['estado'] ?? '') === 'em_progresso') {
+                $tarefasEmProgresso++;
+            } elseif (($tarefa['estado'] ?? '') === 'concluida') {
+                $tarefasConcluidas++;
+            }
+
+            if (($tarefa['prioridade'] ?? '') === 'alta') {
+                $tarefasAltaPrioridade++;
+            }
+        }
+
+        foreach ($recursos as $recurso) {
+            $totalRecursosAfetados += (int)($recurso['quantidade_afetada'] ?? 0);
+        }
+
+        $totalTarefas = count($tarefas);
+        $percentagemConclusao = $totalTarefas > 0
+            ? round(($tarefasConcluidas / $totalTarefas) * 100, 1)
+            : 0;
+
+        $prazoUltrapassado = false;
+        if (
+            !empty($projeto['data_fim_prevista']) &&
+            ($projeto['estado'] ?? '') !== 'concluido' &&
+            strtotime($projeto['data_fim_prevista']) < strtotime(date('Y-m-d'))
+        ) {
+            $prazoUltrapassado = true;
+        }
+
+        ob_start();
+        ?>
+        <!DOCTYPE html>
+        <html lang="pt">
+        <head>
+        <meta charset="UTF-8">
+        <title>Relatório do Projeto</title>
+        <style>
+            body {
+            font-family: DejaVu Sans, sans-serif;
+            color: #1f2937;
+            font-size: 13px;
+            line-height: 1.5;
+            }
+
+            h1 {
+            font-size: 24px;
+            margin-bottom: 4px;
+            }
+
+            h2 {
+            font-size: 17px;
+            margin-top: 24px;
+            margin-bottom: 10px;
+            color: #111827;
+            }
+
+            .subtitle {
+            color: #6b7280;
+            margin-bottom: 20px;
+            }
+
+            .box {
+            border: 1px solid #dbe3ef;
+            border-radius: 10px;
+            padding: 10px 12px;
+            margin-bottom: 10px;
+            }
+
+            .label {
+            font-weight: bold;
+            }
+
+            .value {
+            float: right;
+            }
+
+            .clear {
+            clear: both;
+            }
+
+            .list-item {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 8px 10px;
+            margin-bottom: 8px;
+            }
+
+            .muted {
+            color: #6b7280;
+            }
+
+            ul {
+            margin: 0;
+            padding-left: 18px;
+            }
+
+            .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: bold;
+            }
+
+            .status-planeado { background: #fff3cd; color: #856404; }
+            .status-em_execucao { background: #d1ecf1; color: #0c5460; }
+            .status-concluido { background: #d4edda; color: #155724; }
+            .status-suspenso { background: #f8d7da; color: #721c24; }
+
+            .box h3 {
+            font-size: 15px;
+            margin: 12px 0 8px;
+            color: #111827;
+            }
+
+            .box h3:first-child {
+            margin-top: 0;
+            }
+
+            .box p {
+            margin: 0 0 10px;
+            }
+
+            .box ul {
+            margin: 0 0 10px;
+            padding-left: 18px;
+            }
+
+            .box li {
+            margin-bottom: 6px;
+            }
+
+            .box strong {
+            font-weight: bold;
+            }
+        </style>
+        </head>
+        <body>
+        <h1>Relatório do Projeto</h1>
+        <div class="subtitle">
+            <?= htmlspecialchars($projeto['nome'] ?? 'Projeto') ?>
+        </div>
+
+        <div class="box">
+            <span class="badge status-<?= htmlspecialchars($projeto['estado'] ?? 'planeado') ?>">
+            <?= ucfirst(str_replace('_', ' ', htmlspecialchars($projeto['estado'] ?? 'planeado'))) ?>
+            </span>
+        </div>
+
+        <h2>Visão geral</h2>
+
+        <div class="box"><span class="label">Nome</span><span class="value"><?= htmlspecialchars($projeto['nome'] ?? '—') ?></span><div class="clear"></div></div>
+        <div class="box"><span class="label">Localização</span><span class="value"><?= !empty($projeto['localizacao']) ? htmlspecialchars($projeto['localizacao']) : '—' ?></span><div class="clear"></div></div>
+        <div class="box"><span class="label">Data de início</span><span class="value"><?= !empty($projeto['data_inicio']) ? htmlspecialchars($projeto['data_inicio']) : '—' ?></span><div class="clear"></div></div>
+        <div class="box"><span class="label">Prazo previsto</span><span class="value"><?= !empty($projeto['data_fim_prevista']) ? htmlspecialchars($projeto['data_fim_prevista']) : '—' ?></span><div class="clear"></div></div>
+        <div class="box"><span class="label">Orçamento</span><span class="value"><?= number_format((float)($projeto['orcamento'] ?? 0), 2, ',', '.') ?> €</span><div class="clear"></div></div>
+        <div class="box"><span class="label">Prazo ultrapassado</span><span class="value"><?= $prazoUltrapassado ? 'Sim' : 'Não' ?></span><div class="clear"></div></div>
+
+        <?php if (!empty($projeto['descricao'])) { ?>
+            <div class="box">
+            <span class="label">Descrição</span>
+            <div class="muted" style="margin-top:6px;">
+                <?= nl2br(htmlspecialchars($projeto['descricao'])) ?>
+            </div>
+            </div>
+        <?php } ?>
+
+        <h2>Indicadores do projeto</h2>
+
+        <div class="box"><span class="label">Equipas associadas</span><span class="value"><?= count($equipas) ?></span><div class="clear"></div></div>
+        <div class="box"><span class="label">Recursos associados</span><span class="value"><?= count($recursos) ?></span><div class="clear"></div></div>
+        <div class="box"><span class="label">Recursos afetados</span><span class="value"><?= $totalRecursosAfetados ?></span><div class="clear"></div></div>
+        <div class="box"><span class="label">Total de tarefas</span><span class="value"><?= $totalTarefas ?></span><div class="clear"></div></div>
+        <div class="box"><span class="label">Tarefas pendentes</span><span class="value"><?= $tarefasPendentes ?></span><div class="clear"></div></div>
+        <div class="box"><span class="label">Tarefas em progresso</span><span class="value"><?= $tarefasEmProgresso ?></span><div class="clear"></div></div>
+        <div class="box"><span class="label">Tarefas concluídas</span><span class="value"><?= $tarefasConcluidas ?></span><div class="clear"></div></div>
+        <div class="box"><span class="label">Tarefas de alta prioridade</span><span class="value"><?= $tarefasAltaPrioridade ?></span><div class="clear"></div></div>
+        <div class="box"><span class="label">Percentagem de conclusão</span><span class="value"><?= number_format((float)$percentagemConclusao, 1, ',', '.') ?>%</span><div class="clear"></div></div>
+
+        <h2>Equipas</h2>
+        <?php if (!empty($equipas)) { ?>
+            <?php foreach ($equipas as $equipa) { ?>
+            <div class="list-item">
+                <strong><?= htmlspecialchars($equipa['nome']) ?></strong><br>
+                <span class="muted">
+                <?= !empty($equipa['especialidade']) ? htmlspecialchars($equipa['especialidade']) : 'Sem especialidade definida' ?>
+                </span>
+            </div>
+            <?php } ?>
+        <?php } else { ?>
+            <div class="box">Sem equipas associadas.</div>
+        <?php } ?>
+
+        <h2>Recursos</h2>
+        <?php if (!empty($recursos)) { ?>
+            <?php foreach ($recursos as $recurso) { ?>
+            <div class="list-item">
+                <strong><?= htmlspecialchars($recurso['nome']) ?></strong><br>
+                <span class="muted">
+                <?= htmlspecialchars($recurso['tipo']) ?> — Afetado: <?= (int)($recurso['quantidade_afetada'] ?? 0) ?>
+                </span>
+            </div>
+            <?php } ?>
+        <?php } else { ?>
+            <div class="box">Sem recursos associados.</div>
+        <?php } ?>
+
+        <h2>Tarefas</h2>
+        <?php if (!empty($tarefas)) { ?>
+            <?php foreach ($tarefas as $tarefa) { ?>
+            <div class="list-item">
+                <strong><?= htmlspecialchars($tarefa['titulo']) ?></strong><br>
+                <span class="muted">
+                Estado: <?= ucfirst(str_replace('_', ' ', htmlspecialchars($tarefa['estado'] ?? ''))) ?>
+                — Prioridade: <?= ucfirst(htmlspecialchars($tarefa['prioridade'] ?? '')) ?>
+                <?php if (!empty($tarefa['data_limite'])) { ?>
+                    — Prazo: <?= htmlspecialchars($tarefa['data_limite']) ?>
+                <?php } ?>
+                </span>
+                <?php if (!empty($tarefa['trabalhador_nome'])) { ?>
+                <br><span class="muted">Responsável: <?= htmlspecialchars($tarefa['trabalhador_nome']) ?></span>
+                <?php } ?>
+            </div>
+            <?php } ?>
+        <?php } else { ?>
+            <div class="box">Sem tarefas registadas.</div>
+        <?php } ?>
+
+        <?php if (!empty($relatorioIa)) { ?>
+            <h2>Relatório IA do projeto</h2>
+            <div class="box" style="padding: 14px;">
+            <?= $relatorioIa ?>
+            </div>
+        <?php } ?>
+        </body>
+        </html>
+        <?php
+        $html = ob_get_clean();
+
+        $options = new Options();
+        $options->set('isRemoteEnabled', true);
+
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html, 'UTF-8');
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        $nomeFicheiro = 'relatorio_projeto_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $projeto['nome'] ?? 'projeto') . '.pdf';
+        $dompdf->stream($nomeFicheiro, ['Attachment' => true]);
+        exit;
+    }
+
+    public function exportarRelatorioIaPdf()
+    {
+    $this->validarAutenticacao();
+
+    $relatorioIa = $_SESSION['relatorio_ia'] ?? null;
+
+    if (empty($relatorioIa)) {
+        \App\Lib\Flash::set('warning', 'Ainda não existe nenhum relatório com IA para exportar.');
+        header('Location: /relatorios');
+        exit;
+    }
+
+    ob_start();
+    ?>
+    <!DOCTYPE html>
+    <html lang="pt">
+    <head>
+      <meta charset="UTF-8">
+      <title>Relatório IA</title>
+      <style>
+        body {
+          font-family: DejaVu Sans, sans-serif;
+          color: #1f2937;
+          font-size: 13px;
+          line-height: 1.6;
+        }
+
+        h1 {
+          font-size: 24px;
+          margin-bottom: 4px;
+          color: #111827;
+        }
+
+        .subtitle {
+          color: #6b7280;
+          margin-bottom: 20px;
+        }
+
+        .box {
+          border: 1px solid #dbe3ef;
+          border-radius: 10px;
+          padding: 14px;
+          margin-top: 10px;
+        }
+
+        .box h3 {
+          font-size: 15px;
+          margin: 12px 0 8px;
+          color: #111827;
+        }
+
+        .box h3:first-child {
+          margin-top: 0;
+        }
+
+        .box p {
+          margin: 0 0 10px;
+        }
+
+        .box ul {
+          margin: 0 0 10px;
+          padding-left: 18px;
+        }
+
+        .box li {
+          margin-bottom: 6px;
+        }
+
+        .box strong {
+          font-weight: bold;
+        }
+
+        .meta {
+          margin-top: 8px;
+          color: #6b7280;
+          font-size: 12px;
+        }
+      </style>
+    </head>
+    <body>
+      <h1>Relatório Geral com IA</h1>
+      <div class="subtitle">Resumo executivo da empresa</div>
+
+      <div class="meta">
+        Gerado em: <?= date('d/m/Y H:i') ?>
+      </div>
+
+      <div class="box">
+        <?= $relatorioIa ?>
+      </div>
+    </body>
+    </html>
+    <?php
+    $html = ob_get_clean();
+
+    $options = new \Dompdf\Options();
+    $options->set('isRemoteEnabled', true);
+
+    $dompdf = new \Dompdf\Dompdf($options);
+    $dompdf->loadHtml($html, 'UTF-8');
+    $dompdf->setPaper('A4', 'portrait');
+    $dompdf->render();
+    $dompdf->stream('relatorio_geral_ia.pdf', ['Attachment' => true]);
+    exit;
+    }
 }

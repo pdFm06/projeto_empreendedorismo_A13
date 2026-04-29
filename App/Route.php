@@ -394,6 +394,18 @@ class Route extends Bootstrap {
             'action' => 'gerarRelatorioProjetoIa'
         );
 
+        $routes['exportar_relatorio_projeto_pdf'] = array(
+            'route' => '/exportar_relatorio_projeto_pdf',
+            'controller' => 'mainappController',
+            'action' => 'exportarRelatorioProjetoPdf'
+        );
+
+        $routes['exportar_relatorio_ia_pdf'] = array(
+            'route' => '/exportar_relatorio_ia_pdf',
+            'controller' => 'mainappController',
+            'action' => 'exportarRelatorioIaPdf'
+        );
+
 
         $this->setRoutes($routes);
     }
