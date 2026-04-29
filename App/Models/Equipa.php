@@ -177,4 +177,55 @@ class Equipa extends Model
 
         return $stmt->execute();
     }
+
+    public function listarMembrosIndisponiveisNoPeriodo($equipaId, $utilizadorId, $dataInicio, $dataFim)
+    {
+    $query = "
+        SELECT DISTINCT
+            t.id,
+            t.nome,
+            t.funcao,
+            t.estado,
+            lt.estado AS lesao_estado,
+            lt.data_lesao,
+            lt.data_regresso_prevista,
+            lt.data_regresso_real
+        FROM equipa_trabalhador et
+        INNER JOIN trabalhadores t
+            ON t.id = et.trabalhador_id
+        LEFT JOIN lesoes_trabalhadores lt
+            ON lt.trabalhador_id = t.id
+           AND lt.utilizador_id = :utilizador_id
+        WHERE et.equipa_id = :equipa_id
+          AND t.utilizador_id = :utilizador_id
+          AND (
+                t.estado = 'inativo'
+                OR
+                (
+                    lt.id IS NOT NULL
+                    AND lt.estado IN ('ativa', 'em_recuperacao')
+                    AND (
+                        :data_inicio_1 IS NULL
+                        OR :data_fim_1 IS NULL
+                        OR (
+                            lt.data_lesao <= :data_fim_2
+                            AND COALESCE(lt.data_regresso_real, lt.data_regresso_prevista, '9999-12-31') >= :data_inicio_2
+                        )
+                    )
+                )
+              )
+        ORDER BY t.nome ASC
+    ";
+
+    $stmt = $this->db->prepare($query);
+    $stmt->bindValue(':equipa_id', $equipaId);
+    $stmt->bindValue(':utilizador_id', $utilizadorId);
+    $stmt->bindValue(':data_inicio_1', $dataInicio ?: null);
+    $stmt->bindValue(':data_fim_1', $dataFim ?: null);
+    $stmt->bindValue(':data_fim_2', $dataFim ?: null);
+    $stmt->bindValue(':data_inicio_2', $dataInicio ?: null);
+    $stmt->execute();
+
+    return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
 }

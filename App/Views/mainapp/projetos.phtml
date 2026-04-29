@@ -93,6 +93,11 @@
     color: var(--text-muted, #6b7280);
   }
 
+  .warning-modal-message {
+    white-space: pre-line;
+    color: var(--text-main, #111827);
+  }
+
   .modal-content,
   .modal-header,
   .modal-body,
@@ -271,8 +276,9 @@
             </div>
 
             <div class="mt-3">
-              <form method="post" action="/adicionar_equipa_projeto" class="d-flex gap-2">
+              <form method="post" action="/adicionar_equipa_projeto" class="d-flex gap-2 add-team-project-form">
                 <input type="hidden" name="projeto_id" value="<?= $projeto['id'] ?>">
+                <input type="hidden" name="ignorar_alerta_indisponibilidade" value="0" class="ignore-team-warning">
 
                 <select name="equipa_id" class="form-control" required>
                   <option value="">Seleciona uma equipa</option>
@@ -1082,6 +1088,49 @@
     </div>
   </div>
 
+  <div
+    class="modal fade"
+    id="teamAvailabilityWarningModal"
+    tabindex="-1"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Aviso de indisponibilidade</h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Fechar"
+          ></button>
+        </div>
+
+        <div class="modal-body">
+          <div id="teamAvailabilityWarningMessage" class="warning-modal-message"></div>
+        </div>
+
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-primary"
+            id="confirmTeamAvailabilityBtn"
+          >
+            Continuar mesmo assim
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <footer>
     © <span id="year"></span> Projeto Empreendedorismo — ISCTE ·
     Desenvolvido pelo Grupo A13
@@ -1194,4 +1243,57 @@
       deleteNoteBtn.href = "/eliminar_nota_projeto?id=" + (this.dataset.id || "");
     });
   });
+
+  const warningModalElement = document.getElementById("teamAvailabilityWarningModal");
+  const warningMessageElement = document.getElementById("teamAvailabilityWarningMessage");
+  const confirmWarningBtn = document.getElementById("confirmTeamAvailabilityBtn");
+
+  let pendingWarningSubmit = null;
+
+  <?php if (!empty($_SESSION['alerta_equipa_projeto'])) { ?>
+    document.addEventListener("DOMContentLoaded", function () {
+      if (warningModalElement && warningMessageElement && confirmWarningBtn) {
+        warningMessageElement.textContent = <?= json_encode($_SESSION['alerta_equipa_projeto']['mensagem'], JSON_UNESCAPED_UNICODE) ?>;
+
+        pendingWarningSubmit = function () {
+          const form = document.createElement("form");
+          form.method = "post";
+          form.action = "/adicionar_equipa_projeto";
+
+          const projetoId = document.createElement("input");
+          projetoId.type = "hidden";
+          projetoId.name = "projeto_id";
+          projetoId.value = <?= json_encode($_SESSION['alerta_equipa_projeto']['projeto_id']) ?>;
+          form.appendChild(projetoId);
+
+          const equipaId = document.createElement("input");
+          equipaId.type = "hidden";
+          equipaId.name = "equipa_id";
+          equipaId.value = <?= json_encode($_SESSION['alerta_equipa_projeto']['equipa_id']) ?>;
+          form.appendChild(equipaId);
+
+          const ignorar = document.createElement("input");
+          ignorar.type = "hidden";
+          ignorar.name = "ignorar_alerta_indisponibilidade";
+          ignorar.value = "1";
+          form.appendChild(ignorar);
+
+          document.body.appendChild(form);
+          form.submit();
+        };
+
+        const modalInstance = new bootstrap.Modal(warningModalElement);
+        modalInstance.show();
+      }
+    });
+  <?php unset($_SESSION['alerta_equipa_projeto']); ?>
+  <?php } ?>
+
+  if (confirmWarningBtn) {
+    confirmWarningBtn.addEventListener("click", function () {
+      if (typeof pendingWarningSubmit === "function") {
+        pendingWarningSubmit();
+      }
+    });
+  }
 </script>

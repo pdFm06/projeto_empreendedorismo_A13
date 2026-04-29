@@ -1305,33 +1305,93 @@ class MainappController extends Action
 
     public function adicionarEquipaProjeto()
     {
-        $this->validarAutenticacao();
+    $this->validarAutenticacao();
 
-        $projetoId = $_POST['projeto_id'] ?? null;
-        $equipaId = $_POST['equipa_id'] ?? null;
+    $projetoId = $_POST['projeto_id'] ?? null;
+    $equipaId = $_POST['equipa_id'] ?? null;
+    $ignorarAlerta = (int)($_POST['ignorar_alerta_indisponibilidade'] ?? 0) === 1;
 
-        if (!$projetoId || !$equipaId) {
-            header('Location: /projetos');
-            exit;
-        }
-
-        $projeto = Container::getModel('Projeto');
-        $equipa = Container::getModel('Equipa');
-
-        $projetoExistente = $projeto->obterPorIdEUtilizador($projetoId, $_SESSION['id']);
-        $equipaExistente = $equipa->obterPorIdEUtilizador($equipaId, $_SESSION['id']);
-
-        if (!$projetoExistente || !$equipaExistente) {
-            Flash::set('danger', 'Associação inválida.');
-            header('Location: /projetos');
-            exit;
-        }
-
-        $projeto->adicionarEquipa($projetoId, $equipaId);
-
-        Flash::set('success', 'Equipa associada ao projeto com sucesso.');
+    if (!$projetoId || !$equipaId) {
         header('Location: /projetos');
         exit;
+    }
+
+    $projeto = Container::getModel('Projeto');
+    $equipa = Container::getModel('Equipa');
+
+    $projetoExistente = $projeto->obterPorIdEUtilizador($projetoId, $_SESSION['id']);
+    $equipaExistente = $equipa->obterPorIdEUtilizador($equipaId, $_SESSION['id']);
+
+    if (!$projetoExistente || !$equipaExistente) {
+        Flash::set('danger', 'Associação inválida.');
+        header('Location: /projetos');
+        exit;
+    }
+
+    $dataInicioProjeto = $projetoExistente['data_inicio'] ?? null;
+    $dataFimProjeto = $projetoExistente['data_fim_prevista'] ?? null;
+
+    $membrosIndisponiveis = $equipa->listarMembrosIndisponiveisNoPeriodo(
+        $equipaId,
+        $_SESSION['id'],
+        $dataInicioProjeto,
+        $dataFimProjeto
+    );
+
+    if (!$ignorarAlerta && !empty($membrosIndisponiveis)) {
+        $nomes = [];
+
+        foreach ($membrosIndisponiveis as $membro) {
+            $motivos = [];
+
+            if (($membro['estado'] ?? '') === 'inativo') {
+                $motivos[] = 'inativo';
+            }
+
+            if (!empty($membro['lesao_estado'])) {
+                $motivos[] = 'lesão ' . str_replace('_', ' ', $membro['lesao_estado']);
+            }
+
+            $nomes[] = $membro['nome'] . (!empty($motivos) ? ' (' . implode(', ', $motivos) . ')' : '');
+        }
+
+        $dataInicioFormatada = !empty($dataInicioProjeto)
+            ? date('d/m/Y', strtotime($dataInicioProjeto))
+            : 'sem data de início definida';
+
+        $dataFimFormatada = !empty($dataFimProjeto)
+            ? date('d/m/Y', strtotime($dataFimProjeto))
+            : 'sem data de fim prevista definida';
+
+        $quantidade = count($membrosIndisponiveis);
+        $labelTrabalhadores = $quantidade === 1 ? 'trabalhador potencialmente indisponível' : 'trabalhadores potencialmente indisponíveis';
+
+        $mensagem = 'A equipa "' . $equipaExistente['nome'] . '" tem '
+            . $quantidade . ' ' . $labelTrabalhadores
+            . ' para o período do projeto "' . $projetoExistente['nome'] . '"'
+            . ' (' . $dataInicioFormatada . ' a ' . $dataFimFormatada . ').'
+            . "\n\n"
+            . 'Elementos sinalizados: ' . implode(', ', $nomes) . '.'
+            . "\n\n"
+            . 'Deseja continuar mesmo assim?';
+
+        $_SESSION['alerta_equipa_projeto'] = [
+            'projeto_id' => $projetoId,
+            'equipa_id' => $equipaId,
+            'mensagem' => $mensagem
+        ];
+
+        header('Location: /projetos');
+        exit;
+    }
+
+    unset($_SESSION['alerta_equipa_projeto']);
+
+    $projeto->adicionarEquipa($projetoId, $equipaId);
+
+    Flash::set('success', 'Equipa associada ao projeto com sucesso.');
+    header('Location: /projetos');
+    exit;
     }
 
     public function removerEquipaProjeto()
