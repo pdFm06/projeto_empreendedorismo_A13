@@ -65,7 +65,54 @@
     color: var(--text-main, #111827);
     border: 1px solid var(--border-color, rgba(0,0,0,0.08));
     border-radius: 14px;
-    white-space: pre-wrap;
+    overflow: hidden;
+  }
+
+  .ai-result-header {
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid var(--border-color, rgba(0,0,0,0.08));
+    font-weight: 800;
+    background: rgba(13, 110, 253, 0.04);
+  }
+
+  .ai-result-body {
+    padding: 1rem;
+    line-height: 1.7;
+  }
+
+  .ai-result-body h3 {
+    font-size: 1rem;
+    font-weight: 800;
+    margin: 1.1rem 0 0.65rem;
+    color: var(--text-main, #111827);
+  }
+
+  .ai-result-body h3:first-child {
+    margin-top: 0;
+  }
+
+  .ai-result-body p {
+    margin-bottom: 0.9rem;
+    color: var(--text-main, #111827);
+  }
+
+  .ai-result-body ul {
+    margin-bottom: 1rem;
+    padding-left: 1.2rem;
+  }
+
+  .ai-result-body li {
+    margin-bottom: 0.45rem;
+    color: var(--text-main, #111827);
+  }
+
+  .ai-result-body strong {
+    font-weight: 700;
+  }
+
+  .ai-note {
+    font-size: .9rem;
+    color: var(--text-muted, #6b7280);
   }
 
   footer {
@@ -223,15 +270,26 @@
           </button>
         </form>
 
-        <div class="muted mt-3" style="font-size:.92rem;">
-          O relatório inclui resumo executivo, pontos positivos, riscos identificados
-          e prioridades recomendadas.
+        <div class="ai-note mt-3">
+          O relatório inclui resumo executivo, pontos positivos, riscos, prioridades recomendadas
+          e leitura de gestão, com base apenas nos dados registados.
         </div>
 
         <?php if (!empty($_SESSION['relatorio_ia'])) { ?>
-          <div class="ai-result mt-4 p-3">
-            <div class="fw-bold mb-2">Relatório gerado pela IA</div>
-            <?= nl2br(htmlspecialchars($_SESSION['relatorio_ia'])) ?>
+          <div class="ai-result mt-4">
+            <div class="ai-result-header">Relatório gerado pela IA</div>
+            <div class="ai-result-body">
+              <?= $_SESSION['relatorio_ia'] ?>
+            </div>
+          </div>
+        <?php } else { ?>
+          <div class="ai-result mt-4">
+            <div class="ai-result-header">Relatório gerado pela IA</div>
+            <div class="ai-result-body">
+              <p class="muted mb-0">
+                Ainda não foi gerado nenhum relatório com IA.
+              </p>
+            </div>
           </div>
         <?php } ?>
       </div>

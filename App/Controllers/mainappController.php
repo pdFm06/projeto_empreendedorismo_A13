@@ -1716,7 +1716,7 @@ class MainappController extends Action
                     'content' => [
                         [
                             'type' => 'input_text',
-                            'text' => 'És um assistente empresarial. Escreve relatórios executivos curtos, claros e profissionais em português de Portugal. Não inventes dados. Usa apenas os dados fornecidos.'
+                            'text' => 'És um assistente empresarial especializado em análise executiva. Escreves em português europeu, com clareza, rigor e objetividade. Nunca inventas dados, números ou factos. Usas apenas a informação fornecida pelo utilizador. Quando te pedem relatórios, produzes texto útil para gestão, evitando frases genéricas, repetições e enchimento.'
                         ]
                     ]
                 ],
@@ -1784,22 +1784,57 @@ class MainappController extends Action
         $equipas = $equipa->listarPorUtilizador($_SESSION['id']);
         $recursos = $recurso->listarPorUtilizador($_SESSION['id']);
 
+        $tarefas = [];
+        try {
+            $tarefa = \MF\Model\Container::getModel('Tarefa');
+            if (method_exists($tarefa, 'listarPorUtilizador')) {
+                $tarefas = $tarefa->listarPorUtilizador($_SESSION['id']);
+            }
+        } catch (\Throwable $e) {
+            $tarefas = [];
+        }
+
         $projetosEmExecucao = 0;
         $projetosConcluidos = 0;
+        $projetosPlaneados = 0;
+        $projetosSuspensos = 0;
         $orcamentoTotal = 0;
+
         $trabalhadoresAtivos = 0;
         $trabalhadoresInativos = 0;
+        $salarioTotalDiario = 0;
+
         $recursosBaixoStock = 0;
         $recursosEsgotados = 0;
+        $recursosStockNormal = 0;
+
+        $tarefasPendentes = 0;
+        $tarefasEmProgresso = 0;
+        $tarefasConcluidas = 0;
+
+        $topProjetos = [];
 
         foreach ($projetos as $p) {
-            if (($p['estado'] ?? '') === 'em_execucao') {
+            $estado = $p['estado'] ?? '';
+            $orcamento = (float)($p['orcamento'] ?? 0);
+
+            if ($estado === 'em_execucao') {
                 $projetosEmExecucao++;
-            }
-            if (($p['estado'] ?? '') === 'concluido') {
+            } elseif ($estado === 'concluido') {
                 $projetosConcluidos++;
+            } elseif ($estado === 'planeado') {
+                $projetosPlaneados++;
+            } elseif ($estado === 'suspenso') {
+                $projetosSuspensos++;
             }
-            $orcamentoTotal += (float)($p['orcamento'] ?? 0);
+
+            $orcamentoTotal += $orcamento;
+
+            $topProjetos[] = [
+                'nome' => $p['nome'] ?? 'Sem nome',
+                'estado' => $estado ?: 'sem estado',
+                'orcamento' => $orcamento
+            ];
         }
 
         foreach ($trabalhadores as $t) {
@@ -1808,43 +1843,106 @@ class MainappController extends Action
             } else {
                 $trabalhadoresInativos++;
             }
+
+            $salarioTotalDiario += (float)($t['salario_dia'] ?? 0);
         }
 
         foreach ($recursos as $r) {
             $quantidade = (int)($r['quantidade'] ?? 0);
+
             if ($quantidade === 0) {
                 $recursosEsgotados++;
             } elseif ($quantidade <= 10) {
                 $recursosBaixoStock++;
+            } else {
+                $recursosStockNormal++;
             }
         }
 
-        $nomesProjetos = [];
-        foreach ($projetos as $p) {
-            $nomesProjetos[] = ($p['nome'] ?? 'Sem nome') . ' [' . ($p['estado'] ?? 'sem estado') . ']';
+        foreach ($tarefas as $t) {
+            $estado = $t['estado'] ?? '';
+
+            if ($estado === 'pendente') {
+                $tarefasPendentes++;
+            } elseif ($estado === 'em_progresso') {
+                $tarefasEmProgresso++;
+            } elseif ($estado === 'concluida') {
+                $tarefasConcluidas++;
+            }
         }
 
-        $prompt = "Gera um relatório executivo curto, profissional e objetivo para a empresa associada ao utilizador autenticado.\n\n"
+        usort($topProjetos, function ($a, $b) {
+            return $b['orcamento'] <=> $a['orcamento'];
+        });
+
+        $topProjetos = array_slice($topProjetos, 0, 5);
+
+        $salarioMedioDiario = count($trabalhadores) > 0
+            ? $salarioTotalDiario / count($trabalhadores)
+            : 0;
+
+        $listaTopProjetos = [];
+        foreach ($topProjetos as $item) {
+            $listaTopProjetos[] =
+                $item['nome']
+                . ' (' . $item['estado'] . ', '
+                . number_format((float)$item['orcamento'], 2, '.', '') . ' EUR)';
+        }
+
+        $temPoucosDados =
+            count($projetos) === 0 &&
+            count($equipas) === 0 &&
+            count($trabalhadores) === 0 &&
+            count($recursos) === 0 &&
+            count($tarefas) === 0;
+
+        $prompt = "Elabora um relatório executivo empresarial em português europeu, com tom profissional, claro, objetivo e útil para gestão.\n\n"
+            . "Regras obrigatórias:\n"
+            . "- Usa apenas os dados fornecidos.\n"
+            . "- Não inventes factos, causas, previsões nem números.\n"
+            . "- Não uses Markdown.\n"
+            . "- Responde apenas em HTML simples e limpo.\n"
+            . "- Usa apenas estas tags: <h3>, <p>, <ul>, <li>, <strong>.\n"
+            . "- Não incluas <html>, <body> nem blocos de código.\n"
+            . "- Evita linguagem vaga, repetitiva ou artificial.\n"
+            . "- Se houver poucos dados, assume isso explicitamente e dá recomendações práticas de arranque.\n"
+            . "- Mantém o relatório relativamente curto, mas substantivo.\n\n"
+
+            . "Estrutura obrigatória:\n"
+            . "1. <h3>Resumo executivo</h3>\n"
+            . "2. <h3>Pontos positivos</h3>\n"
+            . "3. <h3>Riscos e alertas</h3>\n"
+            . "4. <h3>Prioridades recomendadas</h3>\n"
+            . "5. <h3>Leitura de gestão</h3>\n\n"
+
             . "Dados da empresa:\n"
             . "- Total de projetos: " . count($projetos) . "\n"
+            . "- Projetos planeados: " . $projetosPlaneados . "\n"
             . "- Projetos em execução: " . $projetosEmExecucao . "\n"
             . "- Projetos concluídos: " . $projetosConcluidos . "\n"
+            . "- Projetos suspensos: " . $projetosSuspensos . "\n"
             . "- Orçamento total dos projetos: " . number_format((float)$orcamentoTotal, 2, '.', '') . " EUR\n"
             . "- Total de equipas: " . count($equipas) . "\n"
             . "- Total de trabalhadores: " . count($trabalhadores) . "\n"
             . "- Trabalhadores ativos: " . $trabalhadoresAtivos . "\n"
             . "- Trabalhadores inativos: " . $trabalhadoresInativos . "\n"
+            . "- Salário médio diário: " . number_format((float)$salarioMedioDiario, 2, '.', '') . " EUR\n"
             . "- Total de recursos: " . count($recursos) . "\n"
+            . "- Recursos com stock normal: " . $recursosStockNormal . "\n"
             . "- Recursos com baixo stock: " . $recursosBaixoStock . "\n"
             . "- Recursos esgotados: " . $recursosEsgotados . "\n"
-            . "- Projetos registados: " . (empty($nomesProjetos) ? 'Nenhum' : implode('; ', $nomesProjetos)) . "\n\n"
-            . "Estrutura do relatório:\n"
-            . "1. Resumo executivo\n"
-            . "2. Pontos positivos\n"
-            . "3. Riscos ou alertas\n"
-            . "4. Prioridades recomendadas\n\n"
-            . "Não inventes números nem factos que não estejam nos dados.";
+            . "- Total de tarefas: " . count($tarefas) . "\n"
+            . "- Tarefas pendentes: " . $tarefasPendentes . "\n"
+            . "- Tarefas em progresso: " . $tarefasEmProgresso . "\n"
+            . "- Tarefas concluídas: " . $tarefasConcluidas . "\n"
+            . "- Top projetos por orçamento: " . (empty($listaTopProjetos) ? 'Nenhum' : implode('; ', $listaTopProjetos)) . "\n"
+            . "- Empresa com poucos dados registados: " . ($temPoucosDados ? 'Sim' : 'Não') . "\n\n"
 
+            . "Objetivo do relatório:\n"
+            . "- Interpretar os dados de forma executiva.\n"
+            . "- Destacar o que está bem.\n"
+            . "- Identificar riscos operacionais concretos com base nos números.\n"
+            . "- Sugerir prioridades de gestão realistas para o curto prazo.\n";
         try {
             $texto = $this->chamarOpenAI($prompt);
             $_SESSION['relatorio_ia'] = $texto;
