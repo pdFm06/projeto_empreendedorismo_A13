@@ -1,0 +1,298 @@
+<?php
+$projeto = $this->view->relatorioProjeto['projeto'];
+$metricas = $this->view->relatorioProjeto['metricas'];
+$relatorioIa = $_SESSION['relatorio_projeto_ia_' . $projeto['id']] ?? null;
+?>
+
+<style>
+  .page-header h1 {
+    font-weight: 800;
+    margin-bottom: 0.35rem;
+    color: var(--text-main, #111827);
+  }
+
+  .subtitle {
+    color: var(--text-muted, #6b7280);
+    margin-bottom: 0;
+  }
+
+  .report-card {
+    background: var(--bg-surface, #fff);
+    color: var(--text-main, #111827);
+    border-radius: 18px;
+    padding: 1.25rem;
+    box-shadow: var(--shadow-soft, 0 8px 30px rgba(0,0,0,0.06));
+    height: 100%;
+  }
+
+  .section-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+  }
+
+  .metric-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-muted, #475569);
+    margin-bottom: 0.5rem;
+  }
+
+  .metric-number {
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1.1;
+  }
+
+  .muted {
+    color: var(--text-muted, #6b7280);
+  }
+
+  .status-chip {
+    display: inline-block;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+
+  .status-planeado { background: #fff3cd; color: #856404; }
+  .status-em_execucao { background: #d1ecf1; color: #0c5460; }
+  .status-concluido { background: #d4edda; color: #155724; }
+  .status-suspenso { background: #f8d7da; color: #721c24; }
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .box-item {
+    border: 1px solid var(--border-color, rgba(0,0,0,0.08));
+    border-radius: 12px;
+    padding: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  .ai-result {
+    background: var(--bg-surface, #fff);
+    border: 1px solid var(--border-color, rgba(0,0,0,0.08));
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .ai-result-header {
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid var(--border-color, rgba(0,0,0,0.08));
+    font-weight: 800;
+    background: rgba(13, 110, 253, 0.04);
+  }
+
+  .ai-result-body {
+    padding: 1rem;
+    line-height: 1.7;
+  }
+
+  .ai-result-body h3 {
+    font-size: 1rem;
+    font-weight: 800;
+    margin: 1rem 0 0.6rem;
+  }
+
+  .ai-result-body h3:first-child {
+    margin-top: 0;
+  }
+
+  .ai-result-body p,
+  .ai-result-body li {
+    color: var(--text-main, #111827);
+  }
+
+  footer {
+    color: var(--text-muted, #6b7280);
+    font-size: 0.9rem;
+    text-align: center;
+    margin-top: 2rem;
+  }
+</style>
+
+<div class="container py-4">
+  <div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-3">
+    <div>
+      <h1>Relatório do Projeto</h1>
+      <p class="subtitle"><?= htmlspecialchars($projeto['nome']) ?></p>
+    </div>
+
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="/projetos" class="btn btn-outline-secondary">Voltar</a>
+
+      <form method="post" action="/gerar_relatorio_projeto_ia">
+        <input type="hidden" name="projeto_id" value="<?= $projeto['id'] ?>">
+        <button type="submit" class="btn btn-primary">Gerar relatório IA</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="row g-4 mt-1">
+    <div class="col-12 col-lg-6">
+      <div class="report-card">
+        <div class="section-title">Visão geral</div>
+
+        <div class="mb-3">
+          <span class="status-chip status-<?= htmlspecialchars($projeto['estado']) ?>">
+            <?= ucfirst(str_replace('_', ' ', htmlspecialchars($projeto['estado']))) ?>
+          </span>
+        </div>
+
+        <div class="info-row">
+          <strong>Orçamento</strong>
+          <span><?= number_format((float)$projeto['orcamento'], 2, ',', '.') ?> €</span>
+        </div>
+
+        <div class="info-row">
+          <strong>Início</strong>
+          <span><?= !empty($projeto['data_inicio']) ? htmlspecialchars($projeto['data_inicio']) : '—' ?></span>
+        </div>
+
+        <div class="info-row">
+          <strong>Prazo previsto</strong>
+          <span><?= !empty($projeto['data_fim_prevista']) ? htmlspecialchars($projeto['data_fim_prevista']) : '—' ?></span>
+        </div>
+
+        <div class="info-row">
+          <strong>Localização</strong>
+          <span><?= !empty($projeto['localizacao']) ? htmlspecialchars($projeto['localizacao']) : '—' ?></span>
+        </div>
+
+        <?php if (!empty($projeto['descricao'])) { ?>
+          <div class="mt-3 muted">
+            <?= htmlspecialchars($projeto['descricao']) ?>
+          </div>
+        <?php } ?>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+      <div class="report-card">
+        <div class="section-title">Indicadores do projeto</div>
+
+        <div class="row g-3">
+          <div class="col-6">
+            <div class="metric-title">Equipas</div>
+            <div class="metric-number"><?= $metricas['total_equipas'] ?></div>
+          </div>
+          <div class="col-6">
+            <div class="metric-title">Recursos</div>
+            <div class="metric-number"><?= $metricas['total_recursos'] ?></div>
+          </div>
+          <div class="col-6">
+            <div class="metric-title">Tarefas</div>
+            <div class="metric-number"><?= $metricas['total_tarefas'] ?></div>
+          </div>
+          <div class="col-6">
+            <div class="metric-title">Conclusão</div>
+            <div class="metric-number"><?= number_format((float)$metricas['percentagem_conclusao'], 1, ',', '.') ?>%</div>
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <div class="muted">Pendentes: <?= $metricas['tarefas_pendentes'] ?></div>
+          <div class="muted">Em progresso: <?= $metricas['tarefas_em_progresso'] ?></div>
+          <div class="muted">Concluídas: <?= $metricas['tarefas_concluidas'] ?></div>
+          <div class="muted">Alta prioridade: <?= $metricas['tarefas_alta_prioridade'] ?></div>
+          <div class="muted">Recursos afetados: <?= $metricas['total_recursos_afetados'] ?></div>
+          <div class="muted">
+            Prazo ultrapassado:
+            <?= $metricas['prazo_ultrapassado'] ? 'Sim' : 'Não' ?>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+      <div class="report-card">
+        <div class="section-title">Equipas associadas</div>
+
+        <?php if (!empty($projeto['equipas'])) { ?>
+          <?php foreach ($projeto['equipas'] as $equipa) { ?>
+            <div class="box-item">
+              <strong><?= htmlspecialchars($equipa['nome']) ?></strong>
+              <div class="muted" style="font-size:.92rem;">
+                <?= !empty($equipa['especialidade']) ? htmlspecialchars($equipa['especialidade']) : 'Sem especialidade definida' ?>
+              </div>
+            </div>
+          <?php } ?>
+        <?php } else { ?>
+          <div class="muted">Sem equipas associadas.</div>
+        <?php } ?>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+      <div class="report-card">
+        <div class="section-title">Recursos associados</div>
+
+        <?php if (!empty($projeto['recursos'])) { ?>
+          <?php foreach ($projeto['recursos'] as $recurso) { ?>
+            <div class="box-item">
+              <strong><?= htmlspecialchars($recurso['nome']) ?></strong>
+              <div class="muted" style="font-size:.92rem;">
+                <?= htmlspecialchars($recurso['tipo']) ?> — Afetado: <?= (int)$recurso['quantidade_afetada'] ?>
+              </div>
+            </div>
+          <?php } ?>
+        <?php } else { ?>
+          <div class="muted">Sem recursos associados.</div>
+        <?php } ?>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+      <div class="report-card">
+        <div class="section-title">Tarefas do projeto</div>
+
+        <?php if (!empty($projeto['tarefas'])) { ?>
+          <?php foreach ($projeto['tarefas'] as $tarefa) { ?>
+            <div class="box-item">
+              <strong><?= htmlspecialchars($tarefa['titulo']) ?></strong>
+              <div class="muted" style="font-size:.92rem;">
+                <?= ucfirst(str_replace('_', ' ', htmlspecialchars($tarefa['estado']))) ?>
+                — <?= ucfirst(htmlspecialchars($tarefa['prioridade'])) ?>
+              </div>
+            </div>
+          <?php } ?>
+        <?php } else { ?>
+          <div class="muted">Sem tarefas registadas.</div>
+        <?php } ?>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="report-card">
+        <div class="section-title">Relatório IA do projeto</div>
+
+        <?php if (!empty($relatorioIa)) { ?>
+          <div class="ai-result">
+            <div class="ai-result-header">Relatório gerado pela IA</div>
+            <div class="ai-result-body">
+              <?= $relatorioIa ?>
+            </div>
+          </div>
+        <?php } else { ?>
+          <div class="muted">
+            Ainda não foi gerado nenhum relatório IA para este projeto.
+          </div>
+        <?php } ?>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    © <span id="year"></span> Projeto Empreendedorismo — ISCTE · Desenvolvido pelo Grupo A13
+  </footer>
+</div>
+
+<script>
+  document.getElementById("year").textContent = new Date().getFullYear();
+</script>

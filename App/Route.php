@@ -382,6 +382,18 @@ class Route extends Bootstrap {
             'action' => 'confirmarMfaConfig'
         );
 
+        $routes['relatorio_projeto'] = array(
+            'route' => '/relatorio_projeto',
+            'controller' => 'mainappController',
+            'action' => 'relatorioProjeto'
+        );
+
+        $routes['gerar_relatorio_projeto_ia'] = array(
+            'route' => '/gerar_relatorio_projeto_ia',
+            'controller' => 'mainappController',
+            'action' => 'gerarRelatorioProjetoIa'
+        );
+
 
         $this->setRoutes($routes);
     }

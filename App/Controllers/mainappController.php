@@ -2342,4 +2342,193 @@ class MainappController extends Action
         header('Location: /definicoes');
         exit;
     }
+
+    public function relatorioProjeto()
+    {
+        $this->validarAutenticacao();
+
+        $id = $_GET['id'] ?? null;
+
+        if (!$id) {
+            \App\Lib\Flash::set('warning', 'Projeto inválido.');
+            header('Location: /projetos');
+            exit;
+        }
+
+        $projetoModel = \MF\Model\Container::getModel('Projeto');
+        $recursoModel = \MF\Model\Container::getModel('Recurso');
+        $tarefaModel = \MF\Model\Container::getModel('Tarefa');
+
+        $projeto = $projetoModel->obterPorIdEUtilizador($id, $_SESSION['id']);
+
+        if (!$projeto) {
+            \App\Lib\Flash::set('danger', 'Não tem permissão para consultar este projeto.');
+            header('Location: /projetos');
+            exit;
+        }
+
+        $projeto['equipas'] = $projetoModel->listarEquipas($id);
+        $projeto['recursos'] = $recursoModel->listarPorProjeto($id);
+        $projeto['tarefas'] = $tarefaModel->listarPorProjeto($id, $_SESSION['id']);
+
+        $tarefasPendentes = 0;
+        $tarefasEmProgresso = 0;
+        $tarefasConcluidas = 0;
+        $tarefasAltaPrioridade = 0;
+
+        foreach ($projeto['tarefas'] as $tarefa) {
+            if (($tarefa['estado'] ?? '') === 'pendente') {
+                $tarefasPendentes++;
+            } elseif (($tarefa['estado'] ?? '') === 'em_progresso') {
+                $tarefasEmProgresso++;
+            } elseif (($tarefa['estado'] ?? '') === 'concluida') {
+                $tarefasConcluidas++;
+            }
+
+            if (($tarefa['prioridade'] ?? '') === 'alta') {
+                $tarefasAltaPrioridade++;
+            }
+        }
+
+        $totalTarefas = count($projeto['tarefas']);
+        $percentagemConclusao = $totalTarefas > 0
+            ? round(($tarefasConcluidas / $totalTarefas) * 100, 1)
+            : 0;
+
+        $totalEquipas = count($projeto['equipas']);
+        $totalRecursos = count($projeto['recursos']);
+
+        $totalRecursosAfetados = 0;
+        foreach ($projeto['recursos'] as $recurso) {
+            $totalRecursosAfetados += (int)($recurso['quantidade_afetada'] ?? 0);
+        }
+
+        $prazoUltrapassado = false;
+        if (
+            !empty($projeto['data_fim_prevista']) &&
+            ($projeto['estado'] ?? '') !== 'concluido' &&
+            strtotime($projeto['data_fim_prevista']) < strtotime(date('Y-m-d'))
+        ) {
+            $prazoUltrapassado = true;
+        }
+
+        $this->view->relatorioProjeto = [
+            'projeto' => $projeto,
+            'metricas' => [
+                'total_equipas' => $totalEquipas,
+                'total_recursos' => $totalRecursos,
+                'total_recursos_afetados' => $totalRecursosAfetados,
+                'total_tarefas' => $totalTarefas,
+                'tarefas_pendentes' => $tarefasPendentes,
+                'tarefas_em_progresso' => $tarefasEmProgresso,
+                'tarefas_concluidas' => $tarefasConcluidas,
+                'tarefas_alta_prioridade' => $tarefasAltaPrioridade,
+                'percentagem_conclusao' => $percentagemConclusao,
+                'prazo_ultrapassado' => $prazoUltrapassado
+            ]
+        ];
+
+        $this->render('relatorio_projeto', 'layout_dashboard');
+    }
+
+    public function gerarRelatorioProjetoIa()
+    {
+        $this->validarAutenticacao();
+
+        $id = $_POST['projeto_id'] ?? null;
+
+        if (!$id) {
+            \App\Lib\Flash::set('warning', 'Projeto inválido.');
+            header('Location: /projetos');
+            exit;
+        }
+
+        $projetoModel = \MF\Model\Container::getModel('Projeto');
+        $recursoModel = \MF\Model\Container::getModel('Recurso');
+        $tarefaModel = \MF\Model\Container::getModel('Tarefa');
+
+        $projeto = $projetoModel->obterPorIdEUtilizador($id, $_SESSION['id']);
+
+        if (!$projeto) {
+            \App\Lib\Flash::set('danger', 'Não tem permissão para consultar este projeto.');
+            header('Location: /projetos');
+            exit;
+        }
+
+        $equipas = $projetoModel->listarEquipas($id);
+        $recursos = $recursoModel->listarPorProjeto($id);
+        $tarefas = $tarefaModel->listarPorProjeto($id, $_SESSION['id']);
+
+        $tarefasPendentes = 0;
+        $tarefasEmProgresso = 0;
+        $tarefasConcluidas = 0;
+        $tarefasAltaPrioridade = 0;
+
+        foreach ($tarefas as $tarefa) {
+            if (($tarefa['estado'] ?? '') === 'pendente') {
+                $tarefasPendentes++;
+            } elseif (($tarefa['estado'] ?? '') === 'em_progresso') {
+                $tarefasEmProgresso++;
+            } elseif (($tarefa['estado'] ?? '') === 'concluida') {
+                $tarefasConcluidas++;
+            }
+
+            if (($tarefa['prioridade'] ?? '') === 'alta') {
+                $tarefasAltaPrioridade++;
+            }
+        }
+
+        $totalTarefas = count($tarefas);
+        $percentagemConclusao = $totalTarefas > 0
+            ? round(($tarefasConcluidas / $totalTarefas) * 100, 1)
+            : 0;
+
+        $nomesEquipas = array_map(fn($e) => $e['nome'] ?? 'Sem nome', $equipas);
+        $nomesRecursos = array_map(function ($r) {
+            return ($r['nome'] ?? 'Sem nome') . ' (afetado: ' . (int)($r['quantidade_afetada'] ?? 0) . ')';
+        }, $recursos);
+
+        $prompt = "Elabora um relatório executivo de projeto em português europeu, com tom profissional, claro e objetivo.\n\n"
+            . "Regras obrigatórias:\n"
+            . "- Usa apenas os dados fornecidos.\n"
+            . "- Não inventes factos, riscos ou números.\n"
+            . "- Não uses Markdown.\n"
+            . "- Responde apenas em HTML simples.\n"
+            . "- Usa apenas estas tags: <h3>, <p>, <ul>, <li>, <strong>.\n\n"
+
+            . "Estrutura obrigatória:\n"
+            . "1. <h3>Resumo do projeto</h3>\n"
+            . "2. <h3>Execução operacional</h3>\n"
+            . "3. <h3>Riscos e alertas</h3>\n"
+            . "4. <h3>Prioridades recomendadas</h3>\n\n"
+
+            . "Dados do projeto:\n"
+            . "- Nome: " . ($projeto['nome'] ?? 'Sem nome') . "\n"
+            . "- Estado: " . ($projeto['estado'] ?? 'Sem estado') . "\n"
+            . "- Localização: " . (!empty($projeto['localizacao']) ? $projeto['localizacao'] : 'Não definida') . "\n"
+            . "- Data de início: " . (!empty($projeto['data_inicio']) ? $projeto['data_inicio'] : 'Não definida') . "\n"
+            . "- Data fim prevista: " . (!empty($projeto['data_fim_prevista']) ? $projeto['data_fim_prevista'] : 'Não definida') . "\n"
+            . "- Orçamento: " . number_format((float)($projeto['orcamento'] ?? 0), 2, '.', '') . " EUR\n"
+            . "- Nº de equipas associadas: " . count($equipas) . "\n"
+            . "- Equipas: " . (empty($nomesEquipas) ? 'Nenhuma' : implode('; ', $nomesEquipas)) . "\n"
+            . "- Nº de recursos associados: " . count($recursos) . "\n"
+            . "- Recursos: " . (empty($nomesRecursos) ? 'Nenhum' : implode('; ', $nomesRecursos)) . "\n"
+            . "- Total de tarefas: " . $totalTarefas . "\n"
+            . "- Tarefas pendentes: " . $tarefasPendentes . "\n"
+            . "- Tarefas em progresso: " . $tarefasEmProgresso . "\n"
+            . "- Tarefas concluídas: " . $tarefasConcluidas . "\n"
+            . "- Tarefas de alta prioridade: " . $tarefasAltaPrioridade . "\n"
+            . "- Percentagem de conclusão: " . number_format($percentagemConclusao, 1, '.', '') . "%\n";
+
+        try {
+            $texto = $this->chamarOpenAI($prompt);
+            $_SESSION['relatorio_projeto_ia_' . $id] = trim($texto);
+            \App\Lib\Flash::set('success', 'Relatório IA do projeto gerado com sucesso.');
+        } catch (\Exception $e) {
+            \App\Lib\Flash::set('danger', 'Não foi possível gerar o relatório IA do projeto: ' . $e->getMessage());
+        }
+
+        header('Location: /relatorio_projeto?id=' . $id);
+        exit;
+    }
 }
