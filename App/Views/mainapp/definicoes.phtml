@@ -34,6 +34,24 @@
     border: 1px solid rgba(220, 53, 69, 0.18);
   }
 
+  .mfa-box {
+    border: 1px dashed rgba(13, 110, 253, 0.25);
+    border-radius: 14px;
+    padding: 1rem;
+    margin-top: 0.75rem;
+    background: rgba(13, 110, 253, 0.03);
+  }
+
+  .mfa-status-on {
+    color: #198754;
+    font-weight: 700;
+  }
+
+  .mfa-status-off {
+    color: #dc3545;
+    font-weight: 700;
+  }
+
   .settings-card .form-label,
   .settings-card .form-check-label,
   .settings-card p,
@@ -183,19 +201,55 @@
           />
         </div>
 
-        <?php if (empty($this->view->conta['mfa_ativo'])) { ?>
-          <form method="post" action="/ativar_mfa">
-            <button type="submit" class="btn btn-primary">
-              Ativar MFA
-            </button>
-          </form>
-        <?php } else { ?>
-          <form method="post" action="/desativar_mfa">
-            <button type="submit" class="btn btn-outline-danger">
-              Desativar MFA
-            </button>
-          </form>
-        <?php } ?>
+        <div class="mfa-box">
+          <?php if (empty($this->view->conta['mfa_ativo'])) { ?>
+            <div class="mb-2 mfa-status-off">MFA desativada</div>
+            <p class="muted mb-3" style="font-size:.92rem;">
+              Para ativar a MFA, confirme primeiro a sua palavra-passe atual.
+              Depois será enviado um código de verificação para o seu email.
+            </p>
+
+            <form method="post" action="/ativar_mfa">
+              <div class="mb-3">
+                <label class="form-label" for="passwordAtualMfaAtivar">Palavra-passe atual</label>
+                <input
+                  id="passwordAtualMfaAtivar"
+                  name="password_atual_mfa"
+                  type="password"
+                  class="form-control"
+                  required
+                />
+              </div>
+
+              <button type="submit" class="btn btn-primary">
+                Ativar MFA
+              </button>
+            </form>
+          <?php } else { ?>
+            <div class="mb-2 mfa-status-on">MFA ativada</div>
+            <p class="muted mb-3" style="font-size:.92rem;">
+              Para desativar a MFA, confirme a sua palavra-passe atual.
+              Depois será enviado um código de verificação para o seu email.
+            </p>
+
+            <form method="post" action="/desativar_mfa">
+              <div class="mb-3">
+                <label class="form-label" for="passwordAtualMfaDesativar">Palavra-passe atual</label>
+                <input
+                  id="passwordAtualMfaDesativar"
+                  name="password_atual_mfa"
+                  type="password"
+                  class="form-control"
+                  required
+                />
+              </div>
+
+              <button type="submit" class="btn btn-outline-danger">
+                Desativar MFA
+              </button>
+            </form>
+          <?php } ?>
+        </div>
       </div>
     </div>
 

@@ -370,6 +370,18 @@ class Route extends Bootstrap {
             'action' => 'desativarMfa'
         );
 
+        $routes['verificar_mfa_config'] = array(
+            'route' => '/verificar_mfa_config',
+            'controller' => 'mainappController',
+            'action' => 'verificarMfaConfigPage'
+        );
+
+        $routes['confirmar_mfa_config'] = array(
+            'route' => '/confirmar_mfa_config',
+            'controller' => 'mainappController',
+            'action' => 'confirmarMfaConfig'
+        );
+
 
         $this->setRoutes($routes);
     }

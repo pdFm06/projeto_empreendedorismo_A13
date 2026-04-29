@@ -2079,27 +2079,169 @@ class MainappController extends Action
     }
 
     public function ativarMfa()
-{
-    $this->validarAutenticacao();
+    {
+        $this->validarAutenticacao();
 
-    $utilizador = Container::getModel('Utilizador');
-    $utilizador->atualizarEstadoMfa($_SESSION['id'], 1);
+        $passwordAtual = trim($_POST['password_atual_mfa'] ?? '');
 
-    Flash::set('success', 'MFA ativada com sucesso.');
-    header('Location: /definicoes');
-    exit;
-}
+        if ($passwordAtual === '') {
+            Flash::set('warning', 'Tem de confirmar a sua palavra-passe para ativar a MFA.');
+            header('Location: /definicoes');
+            exit;
+        }
 
-public function desativarMfa()
-{
-    $this->validarAutenticacao();
+        $utilizador = Container::getModel('Utilizador');
+        $conta = $utilizador->obterPorId($_SESSION['id']);
 
-    $utilizador = Container::getModel('Utilizador');
-    $utilizador->atualizarEstadoMfa($_SESSION['id'], 0);
-    $utilizador->limparCodigoMfa($_SESSION['id']);
+        if (!$conta || !password_verify($passwordAtual, trim($conta['password']))) {
+            Flash::set('danger', 'Palavra-passe incorreta.');
+            header('Location: /definicoes');
+            exit;
+        }
 
-    Flash::set('success', 'MFA desativada com sucesso.');
-    header('Location: /definicoes');
-    exit;
-}
+        if (!empty($conta['mfa_ativo'])) {
+            Flash::set('info', 'A MFA já se encontra ativada.');
+            header('Location: /definicoes');
+            exit;
+        }
+
+        $codigo = (string) random_int(100000, 999999);
+        $expiresAt = date('Y-m-d H:i:s', strtotime('+10 minutes'));
+
+        $utilizador->guardarCodigoMfa($_SESSION['id'], $codigo, $expiresAt);
+
+        $_SESSION['mfa_config_user_id'] = $_SESSION['id'];
+        $_SESSION['mfa_config_action'] = 'ativar';
+
+        $mensagemHtml = "
+            <h2>Confirmar ativação da MFA</h2>
+            <p>O seu código de confirmação é:</p>
+            <h1 style='color:#3366cc; font-size:32px;'>{$codigo}</h1>
+            <p>Este código expira em 10 minutos.</p>
+        ";
+
+        \App\Lib\Email::enviar($_SESSION['email'], 'Confirmar ativação da MFA - OnBUILD', $mensagemHtml);
+
+        Flash::set('info', 'Foi enviado um código de confirmação para o seu email.');
+        header('Location: /verificar_mfa_config');
+        exit;
+    }
+
+    public function desativarMfa()
+    {
+        $this->validarAutenticacao();
+
+        $passwordAtual = trim($_POST['password_atual_mfa'] ?? '');
+
+        if ($passwordAtual === '') {
+            Flash::set('warning', 'Tem de confirmar a sua palavra-passe para desativar a MFA.');
+            header('Location: /definicoes');
+            exit;
+        }
+
+        $utilizador = Container::getModel('Utilizador');
+        $conta = $utilizador->obterPorId($_SESSION['id']);
+
+        if (!$conta || !password_verify($passwordAtual, trim($conta['password']))) {
+            Flash::set('danger', 'Palavra-passe incorreta.');
+            header('Location: /definicoes');
+            exit;
+        }
+
+        if (empty($conta['mfa_ativo'])) {
+            Flash::set('info', 'A MFA já se encontra desativada.');
+            header('Location: /definicoes');
+            exit;
+        }
+
+        $codigo = (string) random_int(100000, 999999);
+        $expiresAt = date('Y-m-d H:i:s', strtotime('+10 minutes'));
+
+        $utilizador->guardarCodigoMfa($_SESSION['id'], $codigo, $expiresAt);
+
+        $_SESSION['mfa_config_user_id'] = $_SESSION['id'];
+        $_SESSION['mfa_config_action'] = 'desativar';
+
+        $mensagemHtml = "
+            <h2>Confirmar desativação da MFA</h2>
+            <p>O seu código de confirmação é:</p>
+            <h1 style='color:#dc3545; font-size:32px;'>{$codigo}</h1>
+            <p>Este código expira em 10 minutos.</p>
+        ";
+
+        \App\Lib\Email::enviar($_SESSION['email'], 'Confirmar desativação da MFA - OnBUILD', $mensagemHtml);
+
+        Flash::set('info', 'Foi enviado um código de confirmação para o seu email.');
+        header('Location: /verificar_mfa_config');
+        exit;
+    }
+
+    public function verificarMfaConfigPage()
+    {
+        $this->validarAutenticacao();
+
+        if (empty($_SESSION['mfa_config_user_id']) || empty($_SESSION['mfa_config_action'])) {
+            Flash::set('warning', 'Não existe nenhuma operação MFA pendente.');
+            header('Location: /definicoes');
+            exit;
+        }
+
+        $this->view->mfa_config_action = $_SESSION['mfa_config_action'];
+        $this->render('verificar_mfa', 'layout1');
+    }
+
+    public function confirmarMfaConfig()
+    {
+        $this->validarAutenticacao();
+
+        if (empty($_SESSION['mfa_config_user_id']) || empty($_SESSION['mfa_config_action'])) {
+            Flash::set('warning', 'Não existe nenhuma operação MFA pendente.');
+            header('Location: /definicoes');
+            exit;
+        }
+
+        $codigo = trim($_POST['codigo'] ?? '');
+        $userId = $_SESSION['mfa_config_user_id'];
+        $acao = $_SESSION['mfa_config_action'];
+
+        if ($codigo === '') {
+            Flash::set('warning', 'Introduza o código de confirmação.');
+            header('Location: /verificar_mfa_config');
+            exit;
+        }
+
+        $utilizador = Container::getModel('Utilizador');
+        $user = $utilizador->obterPorId($userId);
+
+        if (
+            !$user ||
+            empty($user['mfa_codigo']) ||
+            $user['mfa_codigo'] !== $codigo ||
+            empty($user['mfa_expires_at']) ||
+            strtotime($user['mfa_expires_at']) < time()
+        ) {
+            Flash::set('danger', 'Código inválido ou expirado.');
+            header('Location: /verificar_mfa_config');
+            exit;
+        }
+
+        if ($acao === 'ativar') {
+            $utilizador->atualizarEstadoMfa($userId, 1);
+            Flash::set('success', 'MFA ativada com sucesso.');
+        } elseif ($acao === 'desativar') {
+            $utilizador->atualizarEstadoMfa($userId, 0);
+            Flash::set('success', 'MFA desativada com sucesso.');
+        } else {
+            Flash::set('danger', 'Operação MFA inválida.');
+            header('Location: /definicoes');
+            exit;
+        }
+
+        $utilizador->limparCodigoMfa($userId);
+
+        unset($_SESSION['mfa_config_user_id'], $_SESSION['mfa_config_action']);
+
+        header('Location: /definicoes');
+        exit;
+    }
 }
