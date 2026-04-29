@@ -1145,6 +1145,7 @@ class MainappController extends Action
         $recurso = Container::getModel('Recurso');
         $tarefa = Container::getModel('Tarefa');
         $trabalhador = Container::getModel('Trabalhador');
+        $notaProjeto = Container::getModel('NotaProjeto');
 
         $projetos = $projeto->listarPorUtilizador($_SESSION['id']);
 
@@ -1152,6 +1153,7 @@ class MainappController extends Action
             $p['equipas'] = $projeto->listarEquipas($p['id']);
             $p['recursos'] = $recurso->listarPorProjeto($p['id']);
             $p['tarefas'] = $tarefa->listarPorProjeto($p['id'], $_SESSION['id']);
+            $p['notas'] = $notaProjeto->listarPorProjeto($p['id'], $_SESSION['id']);
         }
 
         $this->view->projetos = $projetos;
@@ -3085,5 +3087,93 @@ class MainappController extends Action
     $dompdf->render();
     $dompdf->stream('relatorio_geral_ia.pdf', ['Attachment' => true]);
     exit;
+    }
+
+    public function adicionarNotaProjeto()
+    {
+        $this->validarAutenticacao();
+
+        $projetoId = $_POST['projeto_id'] ?? null;
+        $titulo = trim($_POST['titulo'] ?? '');
+        $conteudo = trim($_POST['conteudo'] ?? '');
+
+        if (!$projetoId || $titulo === '' || $conteudo === '') {
+            Flash::set('warning', 'Preencha o título e o conteúdo da nota.');
+            header('Location: /projetos');
+            exit;
+        }
+
+        $projeto = Container::getModel('Projeto');
+        $notaProjeto = Container::getModel('NotaProjeto');
+
+        $projetoExistente = $projeto->obterPorIdEUtilizador($projetoId, $_SESSION['id']);
+
+        if (!$projetoExistente) {
+            Flash::set('danger', 'Projeto inválido.');
+            header('Location: /projetos');
+            exit;
+        }
+
+        $notaProjeto->__set('projeto_id', $projetoId);
+        $notaProjeto->__set('utilizador_id', $_SESSION['id']);
+        $notaProjeto->__set('titulo', $titulo);
+        $notaProjeto->__set('conteudo', $conteudo);
+
+        $notaProjeto->criar();
+
+        Flash::set('success', 'Nota adicionada com sucesso.');
+        header('Location: /projetos');
+        exit;
+    }
+
+    public function editarNotaProjeto()
+    {
+        $this->validarAutenticacao();
+
+        $id = $_POST['id'] ?? null;
+        $titulo = trim($_POST['titulo'] ?? '');
+        $conteudo = trim($_POST['conteudo'] ?? '');
+
+        if (!$id || $titulo === '' || $conteudo === '') {
+            Flash::set('warning', 'Dados inválidos para editar a nota.');
+            header('Location: /projetos');
+            exit;
+        }
+
+        $notaProjeto = Container::getModel('NotaProjeto');
+        $notaExistente = $notaProjeto->obterPorIdEUtilizador($id, $_SESSION['id']);
+
+        if (!$notaExistente) {
+            Flash::set('danger', 'Não tem permissão para editar esta nota.');
+            header('Location: /projetos');
+            exit;
+        }
+
+        $notaProjeto->__set('id', $id);
+        $notaProjeto->__set('utilizador_id', $_SESSION['id']);
+        $notaProjeto->__set('titulo', $titulo);
+        $notaProjeto->__set('conteudo', $conteudo);
+
+        $notaProjeto->editar();
+
+        Flash::set('success', 'Nota atualizada com sucesso.');
+        header('Location: /projetos');
+        exit;
+    }
+
+    public function eliminarNotaProjeto()
+    {
+        $this->validarAutenticacao();
+
+        $id = $_GET['id'] ?? null;
+
+        if ($id) {
+            $notaProjeto = Container::getModel('NotaProjeto');
+            $notaProjeto->eliminar($id, $_SESSION['id']);
+            Flash::set('success', 'Nota eliminada com sucesso.');
+        }
+
+        header('Location: /projetos');
+        exit;
     }
 }

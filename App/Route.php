@@ -412,6 +412,24 @@ class Route extends Bootstrap {
             'action' => 'editarRecursoProjeto'
         );
 
+        $routes['adicionar_nota_projeto'] = array(
+            'route' => '/adicionar_nota_projeto',
+            'controller' => 'mainappController',
+            'action' => 'adicionarNotaProjeto'
+        );
+
+        $routes['editar_nota_projeto'] = array(
+            'route' => '/editar_nota_projeto',
+            'controller' => 'mainappController',
+            'action' => 'editarNotaProjeto'
+        );
+
+        $routes['eliminar_nota_projeto'] = array(
+            'route' => '/eliminar_nota_projeto',
+            'controller' => 'mainappController',
+            'action' => 'eliminarNotaProjeto'
+        );
+
 
         $this->setRoutes($routes);
     }

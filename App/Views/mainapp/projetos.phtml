@@ -75,6 +75,24 @@
     color: var(--text-main, #111827);
   }
 
+  .note-box {
+    border: 1px solid var(--border-color, rgba(0,0,0,0.08));
+    border-radius: 12px;
+    padding: 0.75rem;
+    margin-top: 0.5rem;
+    background: var(--bg-surface, #fff);
+  }
+
+  .note-title {
+    font-weight: 700;
+    color: var(--text-main, #111827);
+  }
+
+  .note-meta {
+    font-size: .85rem;
+    color: var(--text-muted, #6b7280);
+  }
+
   .modal-content,
   .modal-header,
   .modal-body,
@@ -393,6 +411,71 @@
             </div>
 
             <div class="mt-3">
+              <div class="d-flex justify-content-between align-items-center">
+                <strong style="color: var(--text-main, #111827);">Notas do projeto</strong>
+
+                <button
+                  type="button"
+                  class="btn btn-outline-primary btn-sm open-create-note-btn"
+                  data-bs-toggle="modal"
+                  data-bs-target="#noteModal"
+                  data-projeto-id="<?= $projeto['id'] ?>"
+                  data-projeto-nome="<?= htmlspecialchars($projeto['nome']) ?>"
+                >
+                  + Nova Nota
+                </button>
+              </div>
+
+              <?php if (!empty($projeto['notas'])) { ?>
+                <div class="mt-2">
+                  <?php foreach ($projeto['notas'] as $nota) { ?>
+                    <div class="note-box">
+                      <div class="d-flex justify-content-between align-items-start gap-2">
+                        <div>
+                          <div class="note-title"><?= htmlspecialchars($nota['titulo']) ?></div>
+
+                          <div class="note-meta mt-1">
+                            Criada em: <?= !empty($nota['criado_em']) ? htmlspecialchars($nota['criado_em']) : '—' ?>
+                          </div>
+
+                          <div class="muted mt-2" style="font-size:.92rem;">
+                            <?= nl2br(htmlspecialchars($nota['conteudo'])) ?>
+                          </div>
+                        </div>
+
+                        <div class="text-end">
+                          <button
+                            class="btn btn-sm btn-outline-secondary edit-note-btn mb-2"
+                            data-bs-toggle="modal"
+                            data-bs-target="#noteModal"
+                            data-id="<?= $nota['id'] ?>"
+                            data-projeto-id="<?= $projeto['id'] ?>"
+                            data-projeto-nome="<?= htmlspecialchars($projeto['nome']) ?>"
+                            data-titulo="<?= htmlspecialchars($nota['titulo']) ?>"
+                            data-conteudo="<?= htmlspecialchars($nota['conteudo']) ?>"
+                            type="button"
+                          >
+                            Editar
+                          </button>
+
+                          <a
+                            href="/eliminar_nota_projeto?id=<?= $nota['id'] ?>"
+                            class="btn btn-sm btn-outline-danger d-block"
+                            onclick="return confirm('Eliminar esta nota?')"
+                          >
+                            Eliminar
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  <?php } ?>
+                </div>
+              <?php } else { ?>
+                <div class="muted mt-2">Ainda não existem notas neste projeto.</div>
+              <?php } ?>
+            </div>
+
+            <div class="mt-3">
               <strong style="color: var(--text-main, #111827);">Tarefas do projeto</strong>
 
               <?php if (!empty($projeto['tarefas'])) { ?>
@@ -487,7 +570,6 @@
     <?php } ?>
   </div>
 
-  <!-- Modal Criar Projeto -->
   <div
     class="modal fade"
     id="createProjectModal"
@@ -625,7 +707,6 @@
     </div>
   </div>
 
-  <!-- Modal Editar Projeto -->
   <div
     class="modal fade"
     id="editProjectModal"
@@ -780,7 +861,6 @@
     </div>
   </div>
 
-  <!-- Modal Criar / Editar Tarefa -->
   <div
     class="modal fade"
     id="taskModal"
@@ -939,6 +1019,69 @@
     </div>
   </div>
 
+  <div
+    class="modal fade"
+    id="noteModal"
+    tabindex="-1"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="noteModalTitle">Nova Nota</h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Fechar"
+          ></button>
+        </div>
+
+        <div class="modal-body">
+          <form id="noteForm" method="post" action="/adicionar_nota_projeto">
+            <input type="hidden" id="noteId" name="id" />
+            <input type="hidden" id="noteProjectId" name="projeto_id" />
+
+            <div class="mb-3">
+              <label class="form-label" for="noteProjectName">Projeto</label>
+              <input id="noteProjectName" class="form-control" readonly />
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" for="noteTitle">Título</label>
+              <input id="noteTitle" name="titulo" class="form-control" required />
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" for="noteContent">Conteúdo</label>
+              <textarea id="noteContent" name="conteudo" class="form-control" rows="5" required></textarea>
+            </div>
+          </form>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">
+            Cancelar
+          </button>
+
+          <a
+            href="#"
+            class="btn btn-danger"
+            id="deleteNoteBtn"
+            style="display:none"
+            onclick="return confirm('Eliminar esta nota?')"
+          >
+            Eliminar
+          </a>
+
+          <button class="btn btn-primary" type="submit" form="noteForm">
+            Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <footer>
     © <span id="year"></span> Projeto Empreendedorismo — ISCTE ·
     Desenvolvido pelo Grupo A13
@@ -1013,6 +1156,42 @@
       document.getElementById("editProjectResourceProjectName").value = this.dataset.projetoNome || "";
       document.getElementById("editProjectResourceName").value = this.dataset.recursoNome || "";
       document.getElementById("editProjectResourceQty").value = this.dataset.quantidadeAfetada || "";
+    });
+  });
+
+  const noteForm = document.getElementById("noteForm");
+  const noteModalTitle = document.getElementById("noteModalTitle");
+  const deleteNoteBtn = document.getElementById("deleteNoteBtn");
+
+  document.querySelectorAll(".open-create-note-btn").forEach((btn) => {
+    btn.addEventListener("click", function () {
+      noteModalTitle.textContent = "Nova Nota";
+      noteForm.action = "/adicionar_nota_projeto";
+
+      document.getElementById("noteId").value = "";
+      document.getElementById("noteProjectId").value = this.dataset.projetoId || "";
+      document.getElementById("noteProjectName").value = this.dataset.projetoNome || "";
+      document.getElementById("noteTitle").value = "";
+      document.getElementById("noteContent").value = "";
+
+      deleteNoteBtn.style.display = "none";
+      deleteNoteBtn.href = "#";
+    });
+  });
+
+  document.querySelectorAll(".edit-note-btn").forEach((btn) => {
+    btn.addEventListener("click", function () {
+      noteModalTitle.textContent = "Editar Nota";
+      noteForm.action = "/editar_nota_projeto";
+
+      document.getElementById("noteId").value = this.dataset.id || "";
+      document.getElementById("noteProjectId").value = this.dataset.projetoId || "";
+      document.getElementById("noteProjectName").value = this.dataset.projetoNome || "";
+      document.getElementById("noteTitle").value = this.dataset.titulo || "";
+      document.getElementById("noteContent").value = this.dataset.conteudo || "";
+
+      deleteNoteBtn.style.display = "inline-block";
+      deleteNoteBtn.href = "/eliminar_nota_projeto?id=" + (this.dataset.id || "");
     });
   });
 </script>
