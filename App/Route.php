@@ -406,6 +406,12 @@ class Route extends Bootstrap {
             'action' => 'exportarRelatorioIaPdf'
         );
 
+        $routes['editar_recurso_projeto'] = array(
+            'route' => '/editar_recurso_projeto',
+            'controller' => 'mainappController',
+            'action' => 'editarRecursoProjeto'
+        );
+
 
         $this->setRoutes($routes);
     }

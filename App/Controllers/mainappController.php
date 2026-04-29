@@ -692,6 +692,82 @@ class MainappController extends Action
         exit;
     }
 
+    public function editarRecursoProjeto()
+    {
+        $this->validarAutenticacao();
+
+        $projetoId = $_POST['projeto_id'] ?? null;
+        $recursoId = $_POST['recurso_id'] ?? null;
+        $novaQuantidadeAfetada = (int)($_POST['quantidade_afetada'] ?? 0);
+
+        if (!$projetoId || !$recursoId || $novaQuantidadeAfetada <= 0) {
+            Flash::set('warning', 'Dados inválidos para editar o recurso do projeto.');
+            header('Location: /projetos');
+            exit;
+        }
+
+        $projeto = Container::getModel('Projeto');
+        $recurso = Container::getModel('Recurso');
+
+        $projetoExistente = $projeto->obterPorIdEUtilizador($projetoId, $_SESSION['id']);
+        $recursoExistente = $recurso->obterPorIdEUtilizador($recursoId, $_SESSION['id']);
+        $recursoProjeto = $recurso->obterAssociacaoProjeto($projetoId, $recursoId);
+
+        if (!$projetoExistente || !$recursoExistente || !$recursoProjeto) {
+            Flash::set('danger', 'Associação de recurso inválida.');
+            header('Location: /projetos');
+            exit;
+        }
+
+        $quantidadeAtualAfetada = (int)($recursoProjeto['quantidade_afetada'] ?? 0);
+        $stockAtual = (int)($recursoExistente['quantidade'] ?? 0);
+
+        if ($novaQuantidadeAfetada === $quantidadeAtualAfetada) {
+            Flash::set('info', 'Não foi detetada qualquer alteração na quantidade afetada.');
+            header('Location: /projetos');
+            exit;
+        }
+
+        $diferenca = $novaQuantidadeAfetada - $quantidadeAtualAfetada;
+
+        if ($diferenca > 0 && $diferenca > $stockAtual) {
+            Flash::set(
+                'warning',
+                'Stock insuficiente para aumentar a afetação. Disponível: ' . $stockAtual . ' unidade(s).'
+            );
+            header('Location: /projetos');
+            exit;
+        }
+
+        $novoStock = $stockAtual;
+
+        if ($diferenca > 0) {
+            $novoStock = $stockAtual - $diferenca;
+        } elseif ($diferenca < 0) {
+            $novoStock = $stockAtual + abs($diferenca);
+        }
+
+        try {
+            $recurso->getDb()->beginTransaction();
+
+            $recurso->atualizarQuantidadeAfetadaProjeto($projetoId, $recursoId, $novaQuantidadeAfetada);
+            $recurso->atualizarQuantidade($recursoId, $novoStock, $_SESSION['id']);
+
+            $recurso->getDb()->commit();
+
+            Flash::set('success', 'Quantidade do recurso no projeto atualizada com sucesso.');
+        } catch (\Throwable $e) {
+            if ($recurso->getDb()->inTransaction()) {
+                $recurso->getDb()->rollBack();
+            }
+
+            Flash::set('danger', 'Não foi possível atualizar a quantidade do recurso no projeto.');
+        }
+
+        header('Location: /projetos');
+        exit;
+    }
+
     public function eliminarRecurso()
     {
         $this->validarAutenticacao();
@@ -714,6 +790,7 @@ class MainappController extends Action
 
         $id = $_POST['id'] ?? null;
         $quantidade = $_POST['quantidade'] ?? null;
+        $acao = $_POST['acao'] ?? null;
 
         if ($id === null || $quantidade === null) {
             header('Location: /recursos');
@@ -721,7 +798,25 @@ class MainappController extends Action
         }
 
         $recurso = Container::getModel('Recurso');
-        $recurso->atualizarQuantidade($id, max(0, (int)$quantidade), $_SESSION['id']);
+        $recursoExistente = $recurso->obterPorIdEUtilizador($id, $_SESSION['id']);
+
+        if (!$recursoExistente) {
+            Flash::set('danger', 'Recurso não encontrado.');
+            header('Location: /recursos');
+            exit;
+        }
+
+        $quantidadeAtual = (int)($recursoExistente['quantidade'] ?? 0);
+
+        if ($acao === 'diminuir') {
+            $quantidadeFinal = max(0, $quantidadeAtual - 1);
+        } elseif ($acao === 'aumentar') {
+            $quantidadeFinal = $quantidadeAtual + 1;
+        } else {
+            $quantidadeFinal = max(0, (int)$quantidade);
+        }
+
+        $recurso->atualizarQuantidade($id, $quantidadeFinal, $_SESSION['id']);
 
         Flash::set('success', 'Quantidade atualizada com sucesso.');
         header('Location: /recursos');
@@ -1271,9 +1366,10 @@ class MainappController extends Action
 
         $projetoId = $_POST['projeto_id'] ?? null;
         $recursoId = $_POST['recurso_id'] ?? null;
-        $quantidadeAfetada = $_POST['quantidade_afetada'] ?? null;
+        $quantidadeAfetada = (int)($_POST['quantidade_afetada'] ?? 0);
 
-        if (!$projetoId || !$recursoId || !$quantidadeAfetada) {
+        if (!$projetoId || !$recursoId || $quantidadeAfetada <= 0) {
+            Flash::set('warning', 'Dados inválidos para associar recurso ao projeto.');
             header('Location: /projetos');
             exit;
         }
@@ -1290,9 +1386,36 @@ class MainappController extends Action
             exit;
         }
 
-        $recurso->adicionarAoProjeto($projetoId, $recursoId, max(1, (int)$quantidadeAfetada));
+        $stockDisponivel = (int)($recursoExistente['quantidade'] ?? 0);
 
-        Flash::set('success', 'Recurso associado ao projeto com sucesso.');
+        if ($quantidadeAfetada > $stockDisponivel) {
+            Flash::set(
+                'warning',
+                'Stock insuficiente. Disponível: ' . $stockDisponivel . ' unidade(s).'
+            );
+            header('Location: /projetos');
+            exit;
+        }
+
+        $novoStock = $stockDisponivel - $quantidadeAfetada;
+
+        try {
+            $recurso->getDb()->beginTransaction();
+
+            $recurso->adicionarAoProjeto($projetoId, $recursoId, $quantidadeAfetada);
+            $recurso->atualizarQuantidade($recursoId, $novoStock, $_SESSION['id']);
+
+            $recurso->getDb()->commit();
+
+            Flash::set('success', 'Recurso associado ao projeto com sucesso.');
+        } catch (\Throwable $e) {
+            if ($recurso->getDb()->inTransaction()) {
+                $recurso->getDb()->rollBack();
+            }
+
+            Flash::set('danger', 'Não foi possível associar o recurso ao projeto.');
+        }
+
         header('Location: /projetos');
         exit;
     }
@@ -1305,11 +1428,14 @@ class MainappController extends Action
         $recursoId = $_GET['recurso_id'] ?? null;
 
         if (!$projetoId || !$recursoId) {
+            Flash::set('warning', 'Dados inválidos para remover recurso do projeto.');
             header('Location: /projetos');
             exit;
         }
 
         $projeto = Container::getModel('Projeto');
+        $recurso = Container::getModel('Recurso');
+
         $projetoExistente = $projeto->obterPorIdEUtilizador($projetoId, $_SESSION['id']);
 
         if (!$projetoExistente) {
@@ -1318,10 +1444,43 @@ class MainappController extends Action
             exit;
         }
 
-        $recurso = Container::getModel('Recurso');
-        $recurso->removerDoProjeto($projetoId, $recursoId);
+        $recursoExistente = $recurso->obterPorIdEUtilizador($recursoId, $_SESSION['id']);
 
-        Flash::set('success', 'Recurso removido do projeto com sucesso.');
+        if (!$recursoExistente) {
+            Flash::set('danger', 'Recurso inválido.');
+            header('Location: /projetos');
+            exit;
+        }
+
+        $recursoProjeto = $recurso->obterAssociacaoProjeto($projetoId, $recursoId);
+
+        if (!$recursoProjeto) {
+            Flash::set('warning', 'Este recurso não está associado ao projeto.');
+            header('Location: /projetos');
+            exit;
+        }
+
+        $quantidadeAfetada = (int)($recursoProjeto['quantidade_afetada'] ?? 0);
+        $stockAtual = (int)($recursoExistente['quantidade'] ?? 0);
+        $novoStock = $stockAtual + $quantidadeAfetada;
+
+        try {
+            $recurso->getDb()->beginTransaction();
+
+            $recurso->removerDoProjeto($projetoId, $recursoId);
+            $recurso->atualizarQuantidade($recursoId, $novoStock, $_SESSION['id']);
+
+            $recurso->getDb()->commit();
+
+            Flash::set('success', 'Recurso removido do projeto com sucesso.');
+        } catch (\Throwable $e) {
+            if ($recurso->getDb()->inTransaction()) {
+                $recurso->getDb()->rollBack();
+            }
+
+            Flash::set('danger', 'Não foi possível remover o recurso do projeto.');
+        }
+
         header('Location: /projetos');
         exit;
     }

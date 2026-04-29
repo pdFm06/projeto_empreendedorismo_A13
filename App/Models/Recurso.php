@@ -201,4 +201,44 @@ class Recurso extends Model
 
         return $stmt->execute();
     }
+
+    public function obterAssociacaoProjeto($projetoId, $recursoId)
+    {
+        $query = "
+            SELECT *
+            FROM projeto_recurso
+            WHERE projeto_id = :projeto_id
+            AND recurso_id = :recurso_id
+            LIMIT 1
+        ";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':projeto_id', $projetoId);
+        $stmt->bindValue(':recurso_id', $recursoId);
+        $stmt->execute();
+
+        return $stmt->fetch(\PDO::FETCH_ASSOC);
+    }
+
+    public function getDb()
+    {
+        return $this->db;
+    }
+
+    public function atualizarQuantidadeAfetadaProjeto($projetoId, $recursoId, $quantidadeAfetada)
+    {
+        $query = "
+            UPDATE projeto_recurso
+            SET quantidade_afetada = :quantidade_afetada
+            WHERE projeto_id = :projeto_id
+            AND recurso_id = :recurso_id
+        ";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':quantidade_afetada', $quantidadeAfetada);
+        $stmt->bindValue(':projeto_id', $projetoId);
+        $stmt->bindValue(':recurso_id', $recursoId);
+
+        return $stmt->execute();
+    }
 }

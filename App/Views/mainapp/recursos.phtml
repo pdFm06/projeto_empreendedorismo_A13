@@ -190,8 +190,8 @@
                 <button
                   class="btn btn-sm btn-outline-secondary"
                   type="submit"
-                  name="quantidade"
-                  value="<?= max(0, (int)$recurso['quantidade'] - 1) ?>"
+                  name="acao"
+                  value="diminuir"
                 >
                   −
                 </button>
@@ -208,9 +208,8 @@
                 <button
                   class="btn btn-sm btn-outline-secondary"
                   type="submit"
-                  formaction="/atualizar_quantidade_recurso"
-                  name="quantidade"
-                  value="<?= (int)$recurso['quantidade'] + 1 ?>"
+                  name="acao"
+                  value="aumentar"
                 >
                   +
                 </button>
